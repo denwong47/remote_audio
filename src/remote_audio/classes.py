@@ -9,7 +9,7 @@ from unicodedata import name
 import pyaudio
 
 from remote_audio import exceptions
-from dict_tree import DictionaryTree
+
 
 class DeviceSignature(dict):
     """
@@ -153,7 +153,7 @@ class AudioDevice():
     @classmethod
     def list(
         cls
-    )->List[
+    )->Iterable[
         "AudioDevice"
     ]:
         """
@@ -161,19 +161,21 @@ class AudioDevice():
         """
         _p = pyaudio.PyAudio()
 
-        _devices = []
         for _api_id in range(_p.get_host_api_count()):
             for _device_id in range(_p.get_device_count()):
+                # check all combinations of _api_id and _device_id
                 _device_signature = DeviceSignature(
                     host_api_index          =   _api_id,
                     host_api_device_index   =   _device_id,
                 )
 
-                _devices.append(cls.get(
+                _device = cls.get(
                     signature = _device_signature
-                ))
+                )
 
-        return _devices
+                if (_device):
+                    yield _device
+
 
     @classmethod
     def find(
@@ -184,7 +186,7 @@ class AudioDevice():
             re.Pattern,
             str,
         ],
-    )->List[
+    )->Iterable[
         "AudioDevice"
     ]:
         """
@@ -193,9 +195,7 @@ class AudioDevice():
         Returns a list of "signature" dictionaries.
         """
         
-        _devices = cls.list()
-
-        for _device in _devices:
+        for _device in cls.list():
             if (input and not _device.canInput): continue
             if (output and not _device.canOutput): continue
 
@@ -230,12 +230,12 @@ class AudioDevice():
 
 
 def main():
+    from dict_tree import DictionaryTree
 
     DictionaryTree(
-        AudioDevice.find_first(
+        list(AudioDevice.find(
             output=True,
-            name="Macbook"
-        )
+        ))
     )
 
 
