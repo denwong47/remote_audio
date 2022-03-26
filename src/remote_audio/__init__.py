@@ -1,14 +1,5 @@
-#!/usr/bin/env python3
-import os, sys
-import pyaudio
-import wave
+import remote_audio.exceptions as exceptions
+import remote_audio.classes as classes
 
-import logging
-
-logging.getLogger().setLevel(logging.DEBUG)
-
-def main():
-    pass
-
-if (__name__=="__main__"):
-    main()
+import remote_audio.audio as audio
+import remote_audio.speech as speech
