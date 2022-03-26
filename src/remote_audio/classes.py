@@ -9,6 +9,7 @@ from unicodedata import name
 import pyaudio
 
 from remote_audio import exceptions
+from remote_audio import api
 
 
 class DeviceSignature(dict):
@@ -37,15 +38,24 @@ class AudioDevice():
     def __init__(
         self,
         signature:DeviceSignature,
+        **kwargs,
     ):
-        _p = pyaudio.PyAudio()
+        _p = api.pya
 
         _device_info = _p.get_device_info_by_host_api_device_index(
             **signature
         )
         
-        self.properties =   _device_info
+        self.properties =   {
+            **_device_info,
+            **kwargs,
+        }
         self.signature  =   signature
+
+    def __repr__(
+        self,
+    ):
+        return f"{type(self).__name__}(signature={repr(self.signature)}, name={repr(self.name)})"
 
     def __getattr__(
         self,
@@ -136,7 +146,7 @@ class AudioDevice():
         Getting the default input or output device
         """
 
-        _p = pyaudio.PyAudio()
+        _p = api.pya
 
         output = not input
         
@@ -159,7 +169,7 @@ class AudioDevice():
         """
         Return a list of all devices available
         """
-        _p = pyaudio.PyAudio()
+        _p = api.pya
 
         for _api_id in range(_p.get_host_api_count()):
             for _device_id in range(_p.get_device_count()):
