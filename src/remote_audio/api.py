@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os, sys
 from contextlib import redirect_stderr, redirect_stdout
 
 import pyaudio
@@ -12,8 +13,8 @@ def refresh():
     """
     
     global pya
-    with redirect_stdout(None):
-        with redirect_stderr(None):
+    with redirect_stdout(open(os.devnull, 'w')):
+        with redirect_stderr(open(os.devnull, 'w')):
             pya = pyaudio.PyAudio()
 
 

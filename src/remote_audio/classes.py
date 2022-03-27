@@ -3,13 +3,17 @@
 import os, sys
 import re
 from enum import Enum
-from typing import Any, Dict, Iterable, List, Tuple, Union
+import time as timer
+from typing import Any, BinaryIO, Dict, Iterable, List, Tuple, Union
 
 import pyaudio
 
+from remote_audio import audio
 from remote_audio import exceptions
 from remote_audio import api
 
+
+from remote_audio.audio import AudioStream
 
 class DeviceHostAPISignature(dict):
     """
@@ -56,6 +60,7 @@ class DeviceHostAPISignature(dict):
                 break
                 
         return None
+
 
 
 class AudioDevice():
@@ -311,15 +316,35 @@ class AudioDevice():
         return None
 
 
+    def start_wav_stream(
+        self,
+        io:BinaryIO,
+        chunk_size:int=1024,
+    )->AudioStream:
+        """
+        Play an audio
+        """
+        return audio.start_wav_stream(
+            io=io,
+            device_index=self.device_index,
+            chunk_size=chunk_size
+        )
 
 def main():
-    from dict_tree import DictionaryTree
+    _jiggly_path = "/Users/denwong47/Desktop/jigglypuff.wav"
+    _pika_path = "/Users/denwong47/Desktop/pika.wav"
 
-    DictionaryTree(
-        list(AudioDevice.find(
-            output=True,
-        ))
-    )
+    with open(_jiggly_path, "rb") as _f1:
+        with open(_pika_path, "rb") as _f2:    
+            with AudioDevice.find_first(name="Buds").start_wav_stream(
+                _f1
+            ) as _stream1:
+                with AudioDevice.find_first(name="Macbook").start_wav_stream(
+                    _f2
+                ) as _stream2:
+                    timer.sleep(1)
+                    _stream2.stop()
+
 
 
 if (__name__=="__main__"):
