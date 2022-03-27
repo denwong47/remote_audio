@@ -3,6 +3,7 @@
 from typing import BinaryIO
 
 import pyaudio
+import wave
 
 from remote_audio import api
 

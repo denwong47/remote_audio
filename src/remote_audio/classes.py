@@ -10,13 +10,15 @@ import pyaudio
 
 from remote_audio import exceptions
 from remote_audio import api
+from zmq import device
 
 
-class DeviceSignature(dict):
+class DeviceHostAPISignature(dict):
     """
     Simple class proxying a dict, that defines where the device is located in terms of
-    - host_api, and
     - device_index
+    - host_api, and
+    - host_api_device_index
     """
 
     def __init__(
@@ -28,34 +30,92 @@ class DeviceSignature(dict):
                 "host_api_index":host_api_index,
                 "host_api_device_index":host_api_device_index,
             })
+
+    @classmethod
+    def from_device_index(
+        cls,
+        device_index:int = 0,
+    )->"DeviceHostAPISignature":
+
+        _self_info = api.pya.get_device_info_by_index(device_index=device_index)
         
+        host_api_device_index = 0
+        while (_self_info is not None):
+            try:
+                _device_info = api.pya.get_device_info_by_host_api_device_index(
+                    host_api_index=_self_info.get("hostApi", None),
+                    host_api_device_index=host_api_device_index,
+                )
+
+                if (_self_info == _device_info):
+                    return cls(
+                        host_api_index=_self_info.get("hostApi", None),
+                        host_api_device_index=host_api_device_index,
+                    )
+
+                host_api_device_index += 1
+            except OSError as e:
+                break
+                
+        return None
+
 
 class AudioDevice():
     """
     Proxy for a selected Audio Device
+
+    Usage:
+    # by Device Index, NON-error handled:
+    AudioDevice(device_index)
+    
+    - or - 
+
+    # by Device Index, error handled:
+    AudioDevice.by_device_index(device_index)
+
+    - or - 
+
+    # by Host API Index, error handled:
+    AudioDevice.by_host_api_device_index(signature)
     """
+
+    properties = {
+        # 'index': 0,
+        # 'structVersion': 2,
+        # 'name': 'DELL U2520D',
+        # 'hostApi': 0,
+        # 'maxInputChannels': 0,
+        # 'maxOutputChannels': 2,
+        # 'defaultLowInputLatency': 0.01,
+        # 'defaultLowOutputLatency': 0.0024375,
+        # 'defaultHighInputLatency': 0.1,
+        # 'defaultHighOutputLatency': 0.011770833333333333,
+        # 'defaultSampleRate': 48000.0
+    }
 
     def __init__(
         self,
-        signature:DeviceSignature,
+        device_index:int,
         **kwargs,
     ):
         _p = api.pya
 
-        _device_info = _p.get_device_info_by_host_api_device_index(
-            **signature
+        _device_info = _p.get_device_info_by_index(
+            device_index=device_index
         )
         
         self.properties =   {
             **_device_info,
             **kwargs,
         }
-        self.signature  =   signature
+
+        self.device_index = device_index
+        self.signature = DeviceHostAPISignature.from_device_index(self.device_index)
 
     def __repr__(
         self,
     ):
-        return f"{type(self).__name__}(signature={repr(self.signature)}, name={repr(self.name)})"
+        return f"{type(self).__name__}(device_index={repr(self.device_index)}, signature={repr(self.signature)}, name={repr(self.name)})"
 
     def __getattr__(
         self,
@@ -75,14 +135,34 @@ class AudioDevice():
     @property
     def canOutput(self):
         return  bool(self.maxOutputChannels)
-    
+
     @classmethod
-    def get(
+    def by_device_index(
+        cls,
+        device_index:int=0,
+        **kwargs,
+    )->"AudioDevice":
+
+        try:
+            _device = cls(device_index=device_index, **kwargs)
+            return _device
+        except OSError as e:
+            # [Errno -9978] Invalid host API
+            # [Errno -9996] Invalid device
+            return exceptions.DeviceNotFound(
+                str(e)
+            )
+        except TypeError as e:
+            return exceptions.InvalidInputParameters(
+                f"Device Signature has an error in type: {str(e)}"
+            )
+
+    @classmethod
+    def by_host_api_device_index(
         cls,
         signature:Union[
-            DeviceSignature,
+            DeviceHostAPISignature,
             Tuple[int, int],
-            int
         ]=None,
         host_api_index:int=0,
         host_api_device_index:int=0,
@@ -96,8 +176,8 @@ class AudioDevice():
             isinstance(host_api_device_index, int)
         ):
             # Using raw index mode
-            return cls.get(
-                signature = DeviceSignature(
+            return cls.by_host_api_device_index(
+                signature = DeviceHostAPISignature(
                     host_api_index          = host_api_index,
                     host_api_device_index   = host_api_device_index
                 )
@@ -106,22 +186,18 @@ class AudioDevice():
 
             if ((len(signature)>=2) if isinstance(signature, tuple) else False):
                 # Using tuple mode
-                signature = DeviceSignature(
+                signature = DeviceHostAPISignature(
                     host_api_index          = signature[0],
                     host_api_device_index   = signature[1],
                 )
-            elif (isinstance(signature, int)):
-                signature = DeviceSignature(
-                    host_api_index          = 0,
-                    host_api_device_index   = signature,
-                )
 
             # Lets see if the signature is now ready to be processed by __init__()
-            if (isinstance(signature, DeviceSignature)):
+            if (isinstance(signature, DeviceHostAPISignature)):
                 # Using DeviceSignature mode, simply build it using __init__()
                 try:
-                    return cls(
-                        signature
+                    _p = api.pya
+                    _device_info = _p.get_device_info_by_host_api_device_index(
+                        **signature
                     )
                 except OSError as e:
                     # [Errno -9978] Invalid host API
@@ -133,8 +209,14 @@ class AudioDevice():
                     return exceptions.InvalidInputParameters(
                         f"Device Signature has an error in type: {str(e)}"
                     )
+                
+                return cls(
+                    _device_info.get("index", 0)
+                )
             else:
-                return
+                return exceptions.InvalidInputParameters(
+                    f"Unknown Device Signature of type {type(signature).__name__}."
+                )
 
     @classmethod
     def default(
@@ -155,9 +237,8 @@ class AudioDevice():
         elif (output):
             _device_info = _p.get_default_output_device_info()
 
-        return cls.get(
-            host_api_index=_device_info.get("hostApi"),
-            host_api_device_index=_device_info.get("index"),
+        return cls.by_device_index(
+            device_index=_device_info.get("index")
         )
 
     @classmethod
@@ -171,39 +252,33 @@ class AudioDevice():
         """
         _p = api.pya
 
-        for _api_id in range(_p.get_host_api_count()):
-            for _device_id in range(_p.get_device_count()):
-                # check all combinations of _api_id and _device_id
-                _device_signature = DeviceSignature(
-                    host_api_index          =   _api_id,
-                    host_api_device_index   =   _device_id,
-                )
-
-                _device = cls.get(
-                    signature = _device_signature
-                )
-
-                if (_device):
-                    yield _device
-
+        for _device in map(
+            cls.by_device_index,
+            range(_p.get_device_count())
+        ):
+            if (_device):
+                yield _device
 
     @classmethod
     def find(
         cls,
         input:bool=False,
         output:bool=True,
-        name:str=Union[
+        name:Union[
             re.Pattern,
             str,
-        ],
+        ]=None,
     )->Iterable[
         "AudioDevice"
     ]:
         """
         Look for devices fitting certain criteria.
 
-        Returns a list of "signature" dictionaries.
+        Returns a generator for AudioDevices.
+
+        Note that all criteria are AND operated - meaning if input=True and ouput=True, nothing will be produced.
         """
+        output = not input  # default output is True, so if input=True, its deliberate. We assume that if that's the case, then output should be False.
         
         for _device in cls.list():
             if (input and not _device.canInput): continue
