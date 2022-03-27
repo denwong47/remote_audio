@@ -4,13 +4,11 @@ import os, sys
 import re
 from enum import Enum
 from typing import Any, Dict, Iterable, List, Tuple, Union
-from unicodedata import name
 
 import pyaudio
 
 from remote_audio import exceptions
 from remote_audio import api
-from zmq import device
 
 
 class DeviceHostAPISignature(dict):
