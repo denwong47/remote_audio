@@ -320,6 +320,8 @@ class AudioDevice():
         self,
         io:BinaryIO,
         chunk_size:int=1024,
+        start:bool=True,
+        **kwargs,
     )->AudioStream:
         """
         Play an audio
@@ -327,7 +329,9 @@ class AudioDevice():
         return audio.start_wav_stream(
             io=io,
             device_index=self.device_index,
-            chunk_size=chunk_size
+            chunk_size=chunk_size,
+            start=start,
+            **kwargs,
         )
 
 def main():
