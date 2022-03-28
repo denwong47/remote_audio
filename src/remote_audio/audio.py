@@ -88,46 +88,39 @@ def create_stream_callback(
     return wrapper
 
 def start_wav_stream(
-    io:BinaryIO,
+    io:Union[
+        BinaryIO,
+        str,
+    ],
     device_index:Union[
         int,
         None
     ]=None,
     chunk_size:int=DEFAULT_CHUNK_SIZE,
+    start:bool=True,
     **kwargs,
 )->AudioStream:
+    """
+    Start an AudioStream from a binary IO object.
+
+    The stream is non-blocking - an AudioStream object will be returned as soon as the stream starts.
+    """
+
     _p = api.pya
     
     _wHnd = wave.open(io, "rb")
-
-    # _stream = _p.open(output_device_index=device_index,
-    #                   format=_p.get_format_from_width(_wHnd.getsampwidth()),
-    #                   channels=_wHnd.getnchannels(),
-    #                   rate=_wHnd.getframerate(),
-    #                   output=True,
-    #                   start=True,
-    #                   stream_callback=None, # We need to call stream.write, can't use nonblocking
-    #                   )
-
-    # _chunk_count = 0
-    
-    # while (_data := _wHnd.readframes(chunk_size)):
-    #     try:
-    #         _stream.write(_data)
-    #         _chunk_count += 1
-    #     except KeyboardInterrupt as e:
-    #         break
-
-    # _stream.stop_stream()
-    # _stream.close()
 
     _stream = _p.open(output_device_index=device_index,
                       format=_p.get_format_from_width(_wHnd.getsampwidth()),
                       channels=_wHnd.getnchannels(),
                       rate=_wHnd.getframerate(),
                       output=True,
-                      start=True,
-                      stream_callback=create_stream_callback(_wHnd)
+                      start=start,
+                      stream_callback=create_stream_callback(
+                          wHnd=_wHnd,
+                          chunk_size=chunk_size
+                      ),
+                      **kwargs,
     )
 
     return AudioStream(_stream)
