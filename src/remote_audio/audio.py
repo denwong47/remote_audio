@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import time as timer
+import os, sys
 from typing import Any, BinaryIO, Dict, Union
 
 
@@ -7,63 +7,16 @@ import pyaudio
 import wave
 
 from remote_audio import api
-
+import remote_audio
+from remote_audio.classes import AudioStream, StreamStatus
 
 DEFAULT_CHUNK_SIZE = 1024
 
-class AudioStream():
-    """
-    AudioStream wrapper for non-blocking pyaudio.Stream objects.
-
-    You can use it as a context manager,
-    i.e.
-            with AudioDevice.find_first(name="Buds").start_wav_stream(
-                _f1
-            ) as _stream1:
-                pass
-
-    Which with only complete the context when the full audio clip had been played.
-
-    Or:
-    Use it with .start() and .stop() manually.
-    """
-
-    def __init__(self, stream:pyaudio.Stream):
-        self.stream = stream
-
-    def __bool__(self):
-        return self.stream.is_active()
-    __nonzero__ = __bool__
-    
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        
-        try:
-            while (self.stream.is_active()):
-                timer.sleep(0.02)
-
-        except OSError as e:
-            pass
-
-        self.stop()
-
-
-    def start(self):
-        self.stream.start_stream()
-
-    def stop(self):
-        try:
-            self.stream.stop_stream()
-            self.stream.close()
-        except OSError as e:
-            pass
 
 def create_stream_callback(
     wHnd:wave.Wave_read,
     chunk_size:int=DEFAULT_CHUNK_SIZE,
+    stream_status:StreamStatus=None,
     ):
     """
     From a wave_read object, feed chunks of data to the stream.
@@ -83,7 +36,18 @@ def create_stream_callback(
     ):
         _data = wHnd.readframes(chunk_size)
 
-        return (_data, pyaudio.paContinue if _data else pyaudio.paComplete)
+        if (isinstance(stream_status, StreamStatus)):
+            # Record amount of bytes played to StreamStatus
+            stream_status.played(len(_data))
+
+            _status = pyaudio.paContinue if (_data or stream_status) else pyaudio.paComplete
+            if (not stream_status.timedout):
+                # arbitarily keeping stream alive by feeding null bytes
+                _data += b"\x00"*(chunk_size*wHnd.getnchannels()*wHnd.getsampwidth()-len(_data))
+        else:
+            _status = pyaudio.paContinue if (_data) else pyaudio.paComplete
+
+        return (_data, _status)
 
     return wrapper
 
@@ -98,6 +62,8 @@ def start_wav_stream(
     ]=None,
     chunk_size:int=DEFAULT_CHUNK_SIZE,
     start:bool=True,
+    bytes_total:int=None,
+    timeout:float=None,
     **kwargs,
 )->AudioStream:
     """
@@ -107,9 +73,23 @@ def start_wav_stream(
     """
 
     _p = api.pya
-    
+
     _wHnd = wave.open(io, "rb")
 
+    if (not bytes_total):
+        if (isinstance(io, str)):
+            # io is a path
+            if (os.path.exists(io)):
+                # io exists
+                # Use get_wav_size - this removes the 44/46-byte header size.
+                bytes_total = remote_audio.io.file.get_wav_size(io)
+
+    # Initiate a StreamStatus
+    _stream_status = StreamStatus(
+        bytes_total=bytes_total,
+        timeout=timeout,
+    )
+    
     _stream = _p.open(output_device_index=device_index,
                       format=_p.get_format_from_width(_wHnd.getsampwidth()),
                       channels=_wHnd.getnchannels(),
@@ -118,9 +98,14 @@ def start_wav_stream(
                       start=start,
                       stream_callback=create_stream_callback(
                           wHnd=_wHnd,
-                          chunk_size=chunk_size
+                          chunk_size=chunk_size,
+                          stream_status=_stream_status,
                       ),
                       **kwargs,
     )
 
-    return AudioStream(_stream)
+    return AudioStream(
+        _stream,
+        timeout=timeout,
+        stream_status=_stream_status,
+    )
