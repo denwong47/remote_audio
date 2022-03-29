@@ -2,7 +2,6 @@
 
 import time as timer
 import threading
-from turtle import st
 from typing import Any, Union
 
 import io
