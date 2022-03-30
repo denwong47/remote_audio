@@ -82,7 +82,7 @@ def start_wav_stream(
             if (os.path.exists(io)):
                 # io exists
                 # Use get_wav_size - this removes the 44/46-byte header size.
-                bytes_total = remote_audio.io.file.get_wav_size(io)
+                bytes_total = remote_audio.io.file.get_wav_file_size(io)
 
     # Initiate a StreamStatus
     _stream_status = StreamStatus(

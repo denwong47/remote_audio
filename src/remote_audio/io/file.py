@@ -14,7 +14,7 @@ def get_file_size(
     except OSError as e:
         return FileIOError(str(e))
 
-def get_wav_size(
+def get_wav_file_size(
     path:str,
 ):
     """

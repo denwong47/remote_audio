@@ -341,29 +341,23 @@ class AudioDevice():
         )
 
 def main():
-    _jiggly_path = "test/pika_angry.wav"
-    _pika_path = "test/pika.wav"
+    _wav_path = "test/zhoushen.wav"
 
-    _file_size = remote_audio.io.file.get_wav_size(_jiggly_path)
+    _file_size = remote_audio.io.file.get_wav_file_size(_wav_path)
 
-    with open(_jiggly_path, "rb") as _f1:
-        with open(_pika_path, "rb") as _f2:
-            _empty = BytesLoopIO(_f1.read(2048))
+    with open(_wav_path, "rb") as _f1:
+        _empty = BytesLoopIO(_f1.read(2048))
 
-            with AudioDevice.default(output=True).start_wav_stream(
-                _empty,
-                timeout=10,
-                bytes_total=_file_size,
-            ) as _stream1:
-                # with AudioDevice.find_first(name="Macbook").start_wav_stream(
-                #     _f2
-                # ) as _stream2:
-                #     timer.sleep(1)
-                #     _stream2.stop()
-                _count = 0
-                while (_data:=_f1.read(1024)):
-                    _count += 1
-                    _empty.write(_data)
+        with AudioDevice.default(output=True).start_wav_stream(
+            _empty,
+            timeout=10,
+            bytes_total=_file_size,
+        ) as _stream1:
+
+            _count = 0
+            while (_data:=_f1.read(1024)):
+                _count += 1
+                _empty.write(_data)
 
 
 if (__name__=="__main__"):

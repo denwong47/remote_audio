@@ -6,6 +6,7 @@ from typing import Any, Dict, Union
 import requests
 
 from remote_audio.exceptions import HTTPIOError
+from remote_audio.io.file import get_wav_header_size
 
 def get_http_size(
     url:str,
@@ -25,3 +26,4 @@ def get_http_size(
         return int(_size)
     else:
         return HTTPIOError("Returned header does not contain content-length.")
+
