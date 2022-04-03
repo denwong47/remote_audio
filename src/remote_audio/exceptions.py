@@ -11,6 +11,9 @@ class FalseEvaluatingException(Exception):
         return False
     __nonzero__ = __bool__
 
+class WavFormatError(RuntimeError, FalseEvaluatingException):
+    pass
+
 class FileIOError(OSError, FalseEvaluatingException):
     pass
 

@@ -7,6 +7,8 @@ from typing import Any, Union
 import io
 import pyaudio
 
+from remote_audio.io.file import WavHeader
+
 class StreamStatus():
     """
     A simple pointer object to a boolean,
@@ -37,7 +39,7 @@ class StreamStatus():
         - bytes_total is completed
         - data timed out
         """
-        # if (self.last_data): print (f"Timeout: {(timer.perf_counter() - self.last_data)/self.timeout:.2%} | Size: {self.bytes_played-self.bytes_total}")
+        # if (self.last_data): print (f"Timeout: {timer.perf_counter()-self.last_data:.2f} | Size: {self.bytes_played-self.bytes_total}")
 
         return all(
             (
@@ -133,7 +135,7 @@ class AudioStream():
                 if (self.stream.is_active()):
                     _lastactive = timer.perf_counter()
                 
-                timer.sleep(0.02)
+                timer.sleep(0.1)
 
             self.stream_status.set(False)
 
@@ -155,59 +157,4 @@ class AudioStream():
 
 
 
-class BytesLoopIO(io.IOBase):
-    def __init__(
-        self,
-        initial_bytes:Union[
-            bytes,
-            bytearray
-        ]=b""):
-        
-        self.lock = threading.Lock()
-        self._buffer = bytearray(initial_bytes)
 
-    def getbuffer(
-        self
-    ):
-        """
-        Return a modifiable view of the buffer
-        """
-        return memoryview(self._buffer)
-
-    def getvalue(
-        self
-    ):
-        """
-        Return the value of the buffer - this is a clone
-        """
-        return self._buffer
-
-    def read(
-        self,
-        size:Union[
-            int,
-            None
-        ]=None,
-    )->bytearray:
-        """
-        Read a certain length from the buffer
-        """
-        with self.lock:
-            # We can just pass size=None into [:size]. This actually gives the whole buffer
-            _chunk = self._buffer[:size]
-            self._buffer = self._buffer[len(_chunk):]
-
-        return bytes(_chunk)
-
-    def write(
-        self,
-        b:Union[
-            bytes,
-            bytearray
-        ],
-    )->None:
-        """
-        Write to the end of buffer
-        """
-        with self.lock:
-            self._buffer += bytearray(b)

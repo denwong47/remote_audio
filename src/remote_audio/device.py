@@ -13,7 +13,8 @@ from remote_audio import exceptions
 from remote_audio import api
 import remote_audio
 
-from remote_audio.classes import AudioStream, BytesLoopIO
+from remote_audio.classes import AudioStream
+from remote_audio.io import WaveStreamIO
 
 
 class DeviceHostAPISignature(dict):
@@ -341,19 +342,19 @@ class AudioDevice():
         )
 
 def main():
-    _wav_path = "test/zhoushen.wav"
+    _wav_path = "test/pika_angry.wav"
 
-    _file_size = remote_audio.io.file.get_wav_file_size(_wav_path)
+    _file_size = remote_audio.io.file.get_wav_data_size(_wav_path)
+
 
     with open(_wav_path, "rb") as _f1:
-        _empty = BytesLoopIO(_f1.read(2048))
+        _empty = WaveStreamIO(_f1)
 
         with AudioDevice.default(output=True).start_wav_stream(
             _empty,
             timeout=10,
             bytes_total=_file_size,
         ) as _stream1:
-
             _count = 0
             while (_data:=_f1.read(1024)):
                 _count += 1
