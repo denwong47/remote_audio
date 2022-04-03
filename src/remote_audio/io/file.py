@@ -7,6 +7,13 @@ from typing import Any, Dict, Tuple, Union
 from remote_audio.exceptions import FileIOError, WavFormatError
 
 
+"""
+This module deals with local file I/O, which also includes a range of WAV file specific methods and classes.
+
+For a WAV structure introduction, see
+http://soundfile.sapp.org/doc/WaveFormat/
+"""
+
 class WavHeader(dict):
     """
     A wrapper for dict, for a header of a WAV file.
