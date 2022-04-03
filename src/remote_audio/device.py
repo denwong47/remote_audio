@@ -2,11 +2,8 @@
 
 import os, sys
 import re
-from enum import Enum
-import time as timer
-from typing import Any, BinaryIO, Dict, Iterable, List, Tuple, Union
 
-import pyaudio
+from typing import Any, BinaryIO, Dict, Iterable, List, Tuple, Union
 
 from remote_audio import audio
 from remote_audio import exceptions

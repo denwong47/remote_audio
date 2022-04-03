@@ -1,11 +1,6 @@
 
 
 
-    
-
-from re import L
-
-
 class FalseEvaluatingException(Exception):
     def __bool__(self):
         return False

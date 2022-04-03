@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
 import time as timer
-import threading
+
 from typing import Any, Union
 
-import io
 import pyaudio
 
-from remote_audio.io.file import WavHeader
 
 class StreamStatus():
     """
