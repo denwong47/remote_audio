@@ -323,6 +323,7 @@ class AudioDevice():
         start:bool=True,
         bytes_total:int=None,
         timeout:float=None,
+        exit_interrupt:bool=False,
         **kwargs,
     )->AudioStream:
         """
@@ -335,6 +336,7 @@ class AudioDevice():
             start=start,
             bytes_total=bytes_total,
             timeout=timeout,
+            exit_interrupt=exit_interrupt,
             **kwargs,
         )
 

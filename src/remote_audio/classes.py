@@ -109,11 +109,14 @@ class AudioStream():
         stream:pyaudio.Stream,
         timeout:float=None,
         stream_status:StreamStatus=None,
+        exit_interrupt:bool=False,
     ):
         self.stream = stream
         self.timeout = timeout
 
         self.stream_status = stream_status
+
+        self.exit_interrupt = exit_interrupt
 
     def __bool__(self):
         return self.stream_status
@@ -125,14 +128,12 @@ class AudioStream():
 
     def __exit__(self, type, value, traceback):
         try:
-            _lastactive = timer.perf_counter()
             while (
                 self.stream_status and \
+                not self.exit_interrupt and \
                 type is None # There is no Exception
-            ):
-                if (self.stream.is_active()):
-                    _lastactive = timer.perf_counter()
-                
+            ):    
+                # Wait it out if stream hasn't finished by end of context
                 timer.sleep(0.1)
 
             self.stream_status.set(False)

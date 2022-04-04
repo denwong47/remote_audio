@@ -64,6 +64,7 @@ def start_wav_stream(
     start:bool=True,
     bytes_total:int=None,
     timeout:float=None,
+    exit_interrupt:bool=False,
     **kwargs,
 )->AudioStream:
     """
@@ -104,8 +105,10 @@ def start_wav_stream(
                       **kwargs,
     )
 
+    # Return an AudioStream instance that can control the playback within a context.
     return AudioStream(
         _stream,
         timeout=timeout,
         stream_status=_stream_status,
+        exit_interrupt=exit_interrupt,
     )

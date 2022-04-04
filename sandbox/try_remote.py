@@ -17,6 +17,7 @@ with AudioDevice.default(output=True).start_wav_stream(
     _io,
     timeout=10,
     bytes_total=_io.bytes_total,
+    exit_interrupt=False,
 ) as _stream1:
     
     # Inside this context, nothing actually needs to be done.
@@ -24,6 +25,7 @@ with AudioDevice.default(output=True).start_wav_stream(
     _pbar = tqdm(total =_io.bytes_total)
 
     _start = timer.perf_counter()
+    
     while (_stream1.stream_status):
         _pbar.n = (_io.bytes_written - _stream1.stream_status.bytes_played)
         _pbar.set_description(f"Time {timer.perf_counter()-_start:,.2f}s, Buffer Fullness")
