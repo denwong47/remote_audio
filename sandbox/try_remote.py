@@ -6,9 +6,12 @@ import time as timer
 
 # Initialise an WaveStreamIO from http location.
 # This will start a threading task in the background to download and write the IO already.
-_io = remote_audio.io.classes.WaveStreamIO.from_http("")
+_io = remote_audio.io.classes.WaveStreamIO.from_http(
+    "",
+)
 
 print ("IO Initialised")
+
 
 
 # Start a the audio stream as a context.

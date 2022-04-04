@@ -103,7 +103,7 @@ class WaveStreamIO(StreamIO):
             bytes,
             str,
             io.IOBase
-        ],
+        ]=b"",
         bytes_total:int = None,
         *args,
         **kwargs,
@@ -127,7 +127,7 @@ class WaveStreamIO(StreamIO):
             )
         else:
             # Return the exception
-            return _header
+            return _header.is_valid
     
     def __init__(
         self,
@@ -146,22 +146,26 @@ class WaveStreamIO(StreamIO):
         otherwise wave will throw EOFError without the header.
         """
 
-        _header = file.WavHeader.from_data(
-            initial_bytes,
-        )
+        # _header = file.WavHeader.from_data(
+        #     initial_bytes,
+        # )
 
-        # TODO make a file.WavHeader.construct() method that regenerates the bytes?
-        _header_size = _header.header_size
-        if (isinstance(initial_bytes, bytes)):
-            _data = initial_bytes[:_header_size]
-        elif (isinstance(initial_bytes, str)):
-            with open(initial_bytes, "rb") as _f:
-                _data = _f.read(_header_size)
-        elif (isinstance(initial_bytes, io.IOBase)):
-            _data = initial_bytes.read(_header_size)
+        # - Do we need below?
+        #   We can start the stream with a minimum of 44 bytes,
+        #   but if initial_bytes is more than that we should just feed the whole thing through?
+
+        # # TODO make a file.WavHeader.construct() method that regenerates the bytes?
+        # _header_size = _header.header_size
+        # if (isinstance(initial_bytes, bytes)):
+        #     _data = initial_bytes[:_header_size]
+        # elif (isinstance(initial_bytes, str)):
+        #     with open(initial_bytes, "rb") as _f:
+        #         _data = _f.read(_header_size)
+        # elif (isinstance(initial_bytes, io.IOBase)):
+        #     _data = initial_bytes.read(_header_size)
 
         super().__init__(
-            initial_bytes = _data,
+            initial_bytes = initial_bytes,
             bytes_total = bytes_total,
             *args,
             **kwargs,
@@ -198,8 +202,9 @@ class WaveStreamIO(StreamIO):
                 # If the header is complete and valid, build our WaveStreamIO object
                 _io = cls(
                     initial_bytes = _data_chunk,
-                    bytes_total = _header.total_size,
+                    bytes_total = _header.data_size,
                 )
+                
             else:
                 # If the header it not valid, it will be an Exception already detailing what went wrong
                 return _header

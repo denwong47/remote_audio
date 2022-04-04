@@ -65,8 +65,9 @@ class WavHeader(dict):
 
     def __bool__(
         self,
-    ):
-        return self.is_valid
+    )->bool:
+        # This HAS to return a bool.
+        return bool(self.is_valid)
 
     @property
     def is_valid(
