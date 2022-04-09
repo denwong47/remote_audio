@@ -17,6 +17,8 @@ http://soundfile.sapp.org/doc/WaveFormat/
 http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
 """
 
+WAV_MAX_CHUNKSIZE = 0xFFFFFFFF-36
+
 class WavFMTVariant(Enum):
     PCM = 16
     NON_PCM = 18
@@ -242,7 +244,7 @@ class WavHeader(dict):
     @classmethod
     def new(
         cls,
-        size:Union[int, bytes]      = None,
+        size:Union[int, bytes]      = WAV_MAX_CHUNKSIZE,
         ChunkID:str                 = "RIFF",
         ChunkSize:int               = 36,
         Format:str                  = "WAVE",

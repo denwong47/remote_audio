@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 import time as timer
-
+import warnings
 from typing import Any, Union
 
 import pyaudio
 
+DEFAULT_TIMEOUT = 5
 
 class StreamStatus():
     """
@@ -22,6 +23,14 @@ class StreamStatus():
 
         self.bytes_total = bytes_total
         self.bytes_played = 0
+
+        if (self.bytes_total is None and timeout is None):
+            warnings.warn(
+                RuntimeWarning(
+                    "timeout needs to be specified if bytes_total is not; otherwise stream cannot end. Timeout set to default."
+                )
+            )
+            timeout = DEFAULT_TIMEOUT
 
         self.timeout = timeout
         self.update_last_data()
