@@ -12,7 +12,7 @@ Testing ffmpeg HTTP streaming to WAV stdout pipe, which is then taken up by Audi
 
 if (__name__ =="__main__"):
     if (shell.api.ShellCommandExists("ffmpeg -h")):
-        _url = ""
+        _url = "https://home.denwong.com/static/wav/karen.mp3"
 
         # Set the header to maximum size - otherwise wHnd won't even return any frames.
         _header = remote_audio.io.file.WavHeader.new(remote_audio.io.file.WAV_MAX_CHUNKSIZE)  # Problem - we don't know how long the file will be prior to complete conversion.
@@ -23,8 +23,9 @@ if (__name__ =="__main__"):
             bytes_total = None,
         )
 
+        _device = remote_audio.device.AudioDevice.find_first(name="berry")
         with ShellCommand(f"ffmpeg -f mp3 -i {_url} -f s16le pipe:1", output=bytes) as _sc:
-            with AudioDevice.default(output=True).start_wav_stream(
+            with _device.start_wav_stream(
                 _io,
                 timeout=30,
                 bytes_total=_io.bytes_total,
