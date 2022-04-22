@@ -32,7 +32,7 @@ class FFmpegProtocolFile(classes.FFmpegProtocol):
     follow:int = None
     seekable:int = None
 
-    device_type:classes.FFmpegInputOutputType = classes.FFmpegInputOutputType.INPUT_OUTPUT
+    option_type:classes.FFmpegOptionType = classes.FFmpegOptionType.INPUT_OUTPUT
 
     options_list:tuple = (
         "rw_timeout",
@@ -55,7 +55,7 @@ class FFmpegProtocolFile(classes.FFmpegProtocol):
         This class method is necessary because the class inheritance messed up the 
         ordering of parameters of __init__.
         Currently __init__(
-            device_type,
+            option_type,
             rw_timeout,
             ...
         )
@@ -71,8 +71,8 @@ class FFmpegProtocolFile(classes.FFmpegProtocol):
     @property
     def io_string(
         self
-    )->str:
-        return f"file:{self.path}"
+    )->list:
+        return [f"file:{self.path}"]
 
     @property
     def exists(self):
@@ -98,15 +98,15 @@ class FFmpegProtocolData(classes.FFmpegProtocol):
     encoding:str = "base64"
     raw_data:str = ""
 
-    device_type:classes.FFmpegInputOutputType = classes.FFmpegInputOutputType.INPUT
+    option_type:classes.FFmpegOptionType = classes.FFmpegOptionType.INPUT
 
     options_list:tuple = (
         "rw_timeout",
     )
 
     @property
-    def io_string(self)->str:
-        return self.data
+    def io_string(self)->list:
+        return [self.data]
 
     @property
     def mime(self):
@@ -174,7 +174,7 @@ class FFmpegProtocolData(classes.FFmpegProtocol):
         This class method is necessary because the class inheritance messed up the 
         ordering of parameters of __init__.
         Currently __init__(
-            device_type,
+            option_type,
             rw_timeout,
             ...
         )
@@ -231,8 +231,8 @@ class FFmpegProtocolHTTP(classes.FFmpegProtocol):
     send_expect_100:int = None
     auth_type:str = None
     
-    device_type:classes.FFmpegInputOutputType = \
-        classes.FFmpegInputOutputType.INPUT # -listen is not supported yet
+    option_type:classes.FFmpegOptionType = \
+        classes.FFmpegOptionType.INPUT # -listen is not supported yet
 
     options_list:tuple = (
         "rw_timeout",
@@ -267,7 +267,7 @@ class FFmpegProtocolHTTP(classes.FFmpegProtocol):
     @property
     def io_string(
         self
-    )->str:
+    )->list:
         """
         Return the input/output part of command line.
         Checks if url begins with http[s]://.
@@ -275,10 +275,10 @@ class FFmpegProtocolHTTP(classes.FFmpegProtocol):
         _pattern = re.compile(r"^https?://.+")
 
         if (_pattern.match(self.url)):
-            return self.url
+            return [self.url]
         else:
             # Assume HTTPS automatically
-            return f"https://{self.url}"
+            return [f"https://{self.url}"]
 
 
     @classmethod
@@ -294,7 +294,7 @@ class FFmpegProtocolHTTP(classes.FFmpegProtocol):
         This class method is necessary because the class inheritance messed up the 
         ordering of parameters of __init__.
         Currently __init__(
-            device_type,
+            option_type,
             rw_timeout,
             ...
         )
@@ -331,8 +331,8 @@ class FFmpegProtocolPipe(classes.FFmpegProtocol):
     
     blocksize:int = None
 
-    device_type:classes.FFmpegInputOutputType = \
-        classes.FFmpegInputOutputType.INPUT_OUTPUT # -listen is not supported yet
+    option_type:classes.FFmpegOptionType = \
+        classes.FFmpegOptionType.INPUT_OUTPUT # -listen is not supported yet
 
     options_list:tuple = (
         "rw_timeout",
@@ -342,8 +342,8 @@ class FFmpegProtocolPipe(classes.FFmpegProtocol):
     @property
     def io_string(
         self,
-    )->str:
-        return f"pipe:{self.pipe}"
+    )->list:
+        return [f"pipe:{self.pipe}"]
 
     @classmethod
     def create(
@@ -361,7 +361,7 @@ class FFmpegProtocolPipe(classes.FFmpegProtocol):
         This class method is necessary because the class inheritance messed up the 
         ordering of parameters of __init__.
         Currently __init__(
-            device_type,
+            option_type,
             rw_timeout,
             ...
         )

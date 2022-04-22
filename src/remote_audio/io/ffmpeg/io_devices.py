@@ -12,8 +12,18 @@ TODO This is INCOMPLETE
 """
 
 
-
+@classes.ffmpegioclass
 class FFmpegDeviceAlsa(classes.FFmpegDevice):
-    device_type:classes.FFmpegInputOutputType = classes.FFmpegInputOutputType.INPUT_OUTPUT
+    hw_id:str = None
+    
+    sample_rate:int = None
+    channels:int = None
+
+    option_type:classes.FFmpegOptionType = classes.FFmpegOptionType.INPUT_OUTPUT
+
+    options_list:tuple = (
+        "sample_rate",
+        "channels",
+    )
 
     
