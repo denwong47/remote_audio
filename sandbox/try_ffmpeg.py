@@ -4,6 +4,11 @@ from tqdm import tqdm
 
 import remote_audio
 from remote_audio.device import AudioDevice
+from remote_audio.io.ffmpeg import  FFmpegCommand, \
+                                    FFmpegProtocolHTTP, \
+                                    FFmpegProtocolFile, \
+                                    FFmpegProtocolPipe, \
+                                    FFmpegOptionFormat
 import shell
 from shell.classes import ShellCommand
 import time as timer
@@ -33,7 +38,14 @@ if (__name__ =="__main__"):
         _device = remote_audio.device.AudioDevice.find_first(name="berry") or \
                   remote_audio.device.AudioDevice.default(output=True)
 
-        with ShellCommand(f"ffmpeg -f mp3 -i {_url} -f s16le pipe:1", output=bytes) as _sc:
+        with FFmpegCommand(
+            input=FFmpegProtocolHTTP.create(_url),
+            output=FFmpegProtocolPipe.create(),
+            options=[
+                FFmpegOptionFormat.create("mp3", "input"),
+                FFmpegOptionFormat.create("s16le", "output"),
+            ],
+        ) as _sc:
             with _device.start_wav_stream(
                 _io,
                 timeout=30,

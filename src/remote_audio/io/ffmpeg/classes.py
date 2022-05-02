@@ -44,6 +44,9 @@ class FFmpegOption(abc.ABC):
     option_type:FFmpegOptionType
 
     def __post_init__(self)->None:
+        if (isinstance(self.option_type, str)):
+            self.option_type = getattr(FFmpegOptionType, self.option_type.upper(), None)
+
         if (not isinstance(self.option_type, FFmpegOptionType)):
             warnings.warn(
                 UserWarning(

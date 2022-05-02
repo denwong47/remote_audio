@@ -21,11 +21,23 @@ class FFmpegCommand(ShellCommand):
 
     def __new__(
         cls,
+        input:classes.FFmpegOption,
+        output:classes.FFmpegOption,
         *args,
+        options:Iterable[classes.FFmpegOption]=[],
+        ignore_codes:list=[],
+        timeout:float=None,
         **kwargs,
     ):
         if (ShellCommandExists(["ffmpeg", "-h"])):
-            return cls(*args, **kwargs)
+            return super().__new__(
+                cls,
+                command = ["ffmpeg", ],
+                output = bytes,
+                ignore_codes = ignore_codes,
+                timeout = timeout,
+                *args, **kwargs
+            )
         else:
             return FFmpegNotInstalled("FFmpeg not installed on system.")
 
@@ -49,7 +61,7 @@ class FFmpegCommand(ShellCommand):
             timeout = timeout,
         )
 
-    @property
+    @ShellCommand.command.getter
     def command(
         self,
     )->list:
