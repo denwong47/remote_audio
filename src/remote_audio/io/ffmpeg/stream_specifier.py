@@ -2,7 +2,7 @@
 
 
 from enum import Enum
-from typing import Any, Dict, Union
+from typing import Any, Dict, Iterable, Union
 import warnings
 
 from remote_audio.io.ffmpeg.formats import FFMPEG_FORMATS
@@ -32,6 +32,17 @@ class FFmpegStreamType(Enum):
 @classes.ffmpegioclass
 class FFmpegStreamSpecifier():
     """
+    ```
+    FFmpegStreamSpecifier(
+        stream_index:int = None
+        stream_type:Iterable[Union[str, FFmpegStreamType]] = None
+        pid:int = None
+        stream_id:int = None
+        metadata:Dict[str, Union[str, None]] = None
+        usable:bool = False
+    )->FFmpegStreamSpecifier
+    ```
+
     Some options are applied per-stream, e.g. bitrate or codec. Stream specifiers are used to precisely specify which stream(s) a given option belongs to.
 
     A stream specifier is a string generally appended to the option name and separated from it by a colon. E.g. -codec:a:1 ac3 contains the a:1 stream specifier, which matches the second audio stream. Therefore, it would select the ac3 codec for the second audio stream.
@@ -64,7 +75,16 @@ class FFmpegStreamSpecifier():
     """
     
     stream_index:int = None
-    stream_type:Union[str, FFmpegStreamType] = None
+    stream_type:Union[
+        str,
+        FFmpegStreamType,
+        Iterable[
+            Union[
+                str,
+                FFmpegStreamType
+            ]
+        ]
+    ] = None
     pid:int = None
     stream_id:int = None
     metadata:Dict[str, Union[str, None]] = None
@@ -96,9 +116,12 @@ class FFmpegStreamSpecifier():
                 _items.append(f"{self.pid:d}")
             
             if (self.stream_type):
-                _items.append(self.stream_type.value)
+                _items.append(":".join(
+                    [stream_type.value for stream_type in self.stream_type],
+                ))
             
-            if (self.stream_index):
+            # Need to allow for stream_index = 0
+            if (self.stream_index is not None):
                 _items.append(f"{self.stream_index:d}")
             
             _return = ":".join(
@@ -111,9 +134,19 @@ class FFmpegStreamSpecifier():
         """
         Issue warnings about improper parameters
         """
-
-        if (isinstance(self.stream_type, str)):
-            self.stream_type = FFmpegStreamType(self.stream_type)
+        # Make stream_type a list - so that s:a:0 can be used.
+        if (not isinstance(self.stream_type, (list, tuple))):
+            if (isinstance(self.stream_type, str)):
+                # Allow for "s:a" etc
+                self.stream_type = self.stream_type.split(":")
+            elif (self.stream_type is None):
+                self.stream_type = []
+            else:
+                self.stream_type = [self.stream_type, ]
+ 
+        for _id, _stream_type in enumerate(self.stream_type):
+            if (isinstance(_stream_type, str)):
+                self.stream_type[_id] = FFmpegStreamType(_stream_type)
 
         if (self.usable):
             if (self.stream_index or \

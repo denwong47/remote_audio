@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import shlex
 from typing import Iterable
 import warnings
 
@@ -7,6 +6,10 @@ import remote_audio.io.ffmpeg.classes as classes
 from remote_audio.exceptions import InvalidInputParameters
 
 from shell import ShellCommand, ShellCommandExists
+from shell.exceptions import ShellReturnedFailure
+
+class FFmpegNotInstalled(ShellReturnedFailure):
+    pass
 
 class FFmpegCommand(ShellCommand):
     """
@@ -15,6 +18,16 @@ class FFmpegCommand(ShellCommand):
     """
     audio_input:classes.FFmpegOption = None
     audio_output:classes.FFmpegOption = None
+
+    def __new__(
+        cls,
+        *args,
+        **kwargs,
+    ):
+        if (ShellCommandExists(["ffmpeg", "-h"])):
+            return cls(*args, **kwargs)
+        else:
+            return FFmpegNotInstalled("FFmpeg not installed on system.")
 
     def __init__(
         self,
