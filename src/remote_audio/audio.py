@@ -8,7 +8,7 @@ import wave
 
 from remote_audio import api
 import remote_audio
-from remote_audio.classes import AudioStream, StreamStatus
+from remote_audio.stream import AudioStream, StreamStatus
 
 DEFAULT_CHUNK_SIZE = 1024
 
@@ -62,7 +62,11 @@ def start_wav_stream(
     ]=None,
     chunk_size:int=DEFAULT_CHUNK_SIZE,
     start:bool=True,
-    bytes_total:int=None,
+    bytes_total:Union[
+        int,
+        "remote_audio.io.base_io.StreamIO",
+        None,
+    ]=None,
     timeout:float=None,
     exit_interrupt:bool=False,
     **kwargs,
@@ -77,13 +81,18 @@ def start_wav_stream(
 
     _wHnd = wave.open(io, "rb")
 
-    if (not bytes_total):
+    if (bytes_total is None):
         if (isinstance(io, str)):
             # io is a path
             if (os.path.exists(io)):
                 # io exists
                 # Use get_wav_size - this removes the 44/46-byte header size.
                 bytes_total = remote_audio.io.file.get_wav_data_size(io)
+        elif (isinstance(io, remote_audio.io.base_io.StreamIO)):
+            # io is a StreamIO
+            # That means it has .bytes_total,
+            # and StreamStatus supports having a StreamIO as bytes_total
+            bytes_total = io
 
     # Initiate a StreamStatus
     _stream_status = StreamStatus(

@@ -10,8 +10,6 @@ import remote_audio.io.http as http
 
 
 
-
-
 class StreamIO(io.BytesIO):
     """
     An IO File-like object class that allows both .read() and .write().
@@ -80,6 +78,31 @@ class StreamIO(io.BytesIO):
 
         return _return
     
+    def await_data(
+        self,
+        size:int=2**10,
+        timeout:float=3,
+        interval:float=0.2,
+        callback:Callable[["StreamIO", int], None]=None,
+    ):
+        """
+        A blocking function that only finish when either
+        - "size" amount of bytes had been written, or
+        - timeout has lapsed
+        """
+        _start = timer.perf_counter()
+
+        while (
+            (timer.perf_counter() < (_start+timeout)) and \
+            self.bytes_written < size
+        ):
+            if (callable(callback)):
+                callback(
+                    self,
+                    self.bytes_written,
+                )
+
+            timer.sleep(interval)
 
 
 class WaveStreamIO(StreamIO):
@@ -228,3 +251,4 @@ class WaveStreamIO(StreamIO):
     
         else:
             return _data_generator
+

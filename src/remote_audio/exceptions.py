@@ -1,12 +1,13 @@
 
-
-
 class FalseEvaluatingException(Exception):
     def __bool__(self):
         return False
     __nonzero__ = __bool__
 
 class WavFormatError(RuntimeError, FalseEvaluatingException):
+    pass
+
+class StreamIOError(OSError, FalseEvaluatingException):
     pass
 
 class FileIOError(OSError, FalseEvaluatingException):
@@ -20,3 +21,4 @@ class InvalidInputParameters(ValueError, FalseEvaluatingException):
 
 class DeviceNotFound(RuntimeError, FalseEvaluatingException):
     pass
+

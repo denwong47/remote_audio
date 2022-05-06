@@ -8,10 +8,8 @@ from typing import Any, BinaryIO, Dict, Iterable, List, Tuple, Union
 from remote_audio import audio
 from remote_audio import exceptions
 from remote_audio import api
-import remote_audio
 
-from remote_audio.classes import AudioStream
-from remote_audio.io.classes import WaveStreamIO
+from remote_audio.stream import AudioStream
 
 
 class DeviceHostAPISignature(dict):
