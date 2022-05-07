@@ -23,7 +23,18 @@ At the heart of it, this library works on a few layers:
 ```
 Consider the whole process a continueous IO pipe, with one `stdout` piping into the `stdin` of the next layer.
 
+In the simpliest form:
+```python
+import remote_audio
+import time
+with remote_audio.device.AudioDevice.default().play_http("https://somedomain.com/file.mp3") as _stream:
+    # Stuff to do while audio is still playing
+    while _stream.stream_status:
+        print (f"Buffer remaining: {_stream.stream_status.bytes_buffered:,} bytes")
 
+# Stuff to do when audio stops
+```
+will stream and play an mp3 file on the default audio device.
 
 ## High Level APIs
 
