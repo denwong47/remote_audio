@@ -10,6 +10,7 @@ from remote_audio import exceptions
 from remote_audio import api
 
 from remote_audio.stream import AudioStream
+import remote_audio.classes
 
 
 class DeviceHostAPISignature(dict):
@@ -223,7 +224,7 @@ class AudioDevice():
         cls,
         input:bool=False,
         output:bool=True,
-    ):
+    )->"AudioDevice":
         """
         Getting the default input or output device
         """
@@ -338,25 +339,3 @@ class AudioDevice():
             **kwargs,
         )
 
-# def main():
-#     _wav_path = "test/pika_angry.wav"
-
-#     _file_size = remote_audio.io.file.get_wav_data_size(_wav_path)
-
-
-#     with open(_wav_path, "rb") as _f1:
-#         _empty = WaveStreamIO(_f1)
-
-#         with AudioDevice.default(output=True).start_wav_stream(
-#             _empty,
-#             timeout=10,
-#             bytes_total=_file_size,
-#         ) as _stream1:
-#             _count = 0
-#             while (_data:=_f1.read(1024)):
-#                 _count += 1
-#                 _empty.write(_data)
-
-
-# if (__name__=="__main__"):
-#     main()
