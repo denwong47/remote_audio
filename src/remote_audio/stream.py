@@ -21,6 +21,7 @@ class StreamStatus():
     def __init__(
         self,
         timeout:int=None,
+        io:'remote_audio.io.base_io.StreamIO'=None,
         bytes_total:Union[
             int,
             "remote_audio.io.base_io.StreamIO",
@@ -28,7 +29,8 @@ class StreamStatus():
     ):
         self.set(True)
 
-        self.bytes_total = bytes_total
+        self.io = io
+        self.bytes_total = bytes_total if bytes_total else (self.io if isinstance(self.io, remote_audio.io.base_io.StreamIO) else None)
         self.bytes_played = 0
 
         if (self.bytes_total is None and timeout is None):
@@ -107,6 +109,17 @@ class StreamStatus():
     def bytes_total(
         self,
     ):
+        """
+        Total number of bytes anticipated, in wave form.
+
+        Return itself if its an int;
+        Return current io.bytes_total if its a StreamIO object.
+
+        This is because StreamIO may not know the true length of the data at the start of stream,
+        and will only update its .bytes_total when its own streaming ends.
+
+        Hence this property needs to dynamically update.
+        """
         if (isinstance(self._bytes_total_origin, remote_audio.io.base_io.StreamIO)):
             return self._bytes_total_origin.bytes_total
         else:
@@ -121,6 +134,36 @@ class StreamStatus():
         ]
     ):
         self._bytes_total_origin = value
+
+    @property
+    def bytes_written(
+        self,
+    ):
+        """
+        Bytes written by `io` so far.
+
+        Only valid if `io` is specified, and it is a `StreamIO` instance.
+        """
+
+        if (isinstance(self.io, remote_audio.io.base_io.StreamIO)):
+            return self.io.bytes_written
+        else:
+            return None
+    
+    @property
+    def bytes_buffered(
+        self,
+    ):
+        """
+        Bytes that are buffered, but not yet played.
+
+        Only valid if `io` is specified, and it is a `StreamIO` instance.
+        """
+
+        if (isinstance(_written := self.bytes_written, int) and isinstance(_played := self.bytes_played, int)):
+            return _written - _played
+        else:
+            return None
 
 class AudioStream():
     """
