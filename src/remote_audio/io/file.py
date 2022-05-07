@@ -17,6 +17,7 @@ http://soundfile.sapp.org/doc/WaveFormat/
 http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
 """
 
+DEFAULT_FILE_CHUNK_SIZE = 2**20
 WAV_MAX_CHUNKSIZE = 0xFFFFFFFF-36
 
 class WavFMTVariant(Enum):
@@ -450,6 +451,19 @@ class WavHeader(dict):
 
         return _bytes
 
+def get_file_size(
+    path:str,
+)->int:
+    """
+    Get file size from OS.
+    """
+    try:
+        return os.path.getsize(
+            path
+        )
+    except OSError as e:
+        return FileIOError(str(e))
+
 def get_wav_file_size(
     data:Union[
         bytes, # actual binary data
@@ -464,12 +478,7 @@ def get_wav_file_size(
     if (isinstance(data, str)):
         # Path
         _path = data
-        try:
-            return os.path.getsize(
-                _path
-            )
-        except OSError as e:
-            return FileIOError(str(e))
+        return (get_file_size(_path))
             
     elif (isinstance(data, bytes)):
         # bytes only, give its length

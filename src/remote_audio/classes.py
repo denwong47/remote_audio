@@ -1,168 +1,395 @@
 #!/usr/bin/env python3
 
-import time as timer
-import warnings
-from typing import Any, Union
+# Collection of all StreamIO classes.
 
-import pyaudio
+from remote_audio.io.base_io import StreamIO, \
+                                    WaveStreamIO
 
-DEFAULT_TIMEOUT = 5
-
-class StreamStatus():
-    """
-    A simple pointer object to a boolean,
-    used to be passed to callback methods for in-callback access to stream status.
-    """
-
-    def __init__(
-        self,
-        timeout:int=None,
-        bytes_total:int=None,
-    ):
-        self.set(True)
-
-        self.bytes_total = bytes_total
-        self.bytes_played = 0
-
-        if (self.bytes_total is None and timeout is None):
-            warnings.warn(
-                RuntimeWarning(
-                    "timeout needs to be specified if bytes_total is not; otherwise stream cannot end. Timeout set to default."
-                )
-            )
-            timeout = DEFAULT_TIMEOUT
-
-        self.timeout = timeout
-        self.update_last_data()
-        
-        self.played(0)
-
-    def __bool__(
-        self
-    ):
-        """
-        Evaluates self to False if:
-        - status is False or
-        - bytes_total is completed
-        - data timed out
-        """
-        # if (self.last_data): print (f"Timeout: {timer.perf_counter()-self.last_data:.2f} | Size: {self.bytes_played-self.bytes_total}")
-
-        return all(
-            (
-                self.status,
-                not self.completed,
-                not self.timedout,
-            )
-        )
-            
-    __nonzero__ = __bool__
-
-    def set(
-        self,
-        status:bool=True,
-    ):
-        self.status = status
-
-    def update_last_data(
-        self
-    ):
-        self.last_data = timer.perf_counter()
-
-    def played(
-        self,
-        bytes_count:int,
-    ):
-        self.bytes_played += max(0, bytes_count)
-
-        if (bytes_count>0):
-            self.update_last_data()
-
-    @property
-    def completed(
-        self
-    ):
-        if (isinstance(self.bytes_total, int)):
-            return self.bytes_played >= self.bytes_total
-        else:
-            return None
-
-    @property
-    def timedout(
-        self
-    ):
-        if (isinstance(self.timeout, (float, int))):
-            return (timer.perf_counter() - self.last_data) >= self.timeout
-        else:
-            return None
-
-class AudioStream():
-    """
-    AudioStream wrapper for non-blocking pyaudio.Stream objects.
-
-    You can use it as a context manager,
-    i.e.
-            with AudioDevice.find_first(name="Buds").start_wav_stream(
-                _f1
-            ) as _stream1:
-                pass
-
-    Which with only complete the context when the full audio clip had been played.
-
-    Or:
-    Use it with .start() and .stop() manually.
-    """
-
-    def __init__(
-        self,
-        stream:pyaudio.Stream,
-        timeout:float=None,
-        stream_status:StreamStatus=None,
-        exit_interrupt:bool=False,
-    ):
-        self.stream = stream
-        self.timeout = timeout
-
-        self.stream_status = stream_status
-
-        self.exit_interrupt = exit_interrupt
-
-    def __bool__(self):
-        return self.stream_status
-    __nonzero__ = __bool__
-    
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        try:
-            while (
-                self.stream_status and \
-                not self.exit_interrupt and \
-                type is None # There is no Exception
-            ):    
-                # Wait it out if stream hasn't finished by end of context
-                timer.sleep(0.1)
-
-            self.stream_status.set(False)
-
-        except OSError as e:
-            pass
-
-        self.stop()
-
-
-    def start(self):
-        self.stream.start_stream()
-
-    def stop(self):
-        try:
-            self.stream.stop_stream()
-            self.stream.close()
-        except OSError as e:
-            pass
-
-
-
-
+from remote_audio.io.advanced_io import FFmpegStreamIO, \
+                                        A64StreamIO, \
+                                        AACStreamIO, \
+                                        AAStreamIO, \
+                                        AAXStreamIO, \
+                                        AC3StreamIO, \
+                                        ACEStreamIO, \
+                                        ACMStreamIO, \
+                                        ACTStreamIO, \
+                                        ADFStreamIO, \
+                                        ADPStreamIO, \
+                                        ADSStreamIO, \
+                                        ADTSStreamIO, \
+                                        ADXStreamIO, \
+                                        AEAStreamIO, \
+                                        AFCStreamIO, \
+                                        AIFFStreamIO, \
+                                        AIXStreamIO, \
+                                        ALAWStreamIO, \
+                                        ALIAS_PIXStreamIO, \
+                                        ALPStreamIO, \
+                                        AMRNBStreamIO, \
+                                        AMRStreamIO, \
+                                        AMRWBStreamIO, \
+                                        AMVStreamIO, \
+                                        ANMStreamIO, \
+                                        APCStreamIO, \
+                                        APEStreamIO, \
+                                        APMStreamIO, \
+                                        APNGStreamIO, \
+                                        APTXStreamIO, \
+                                        APTX_HDStreamIO, \
+                                        AQTITLEStreamIO, \
+                                        ARGO_ASFStreamIO, \
+                                        ARGO_BRPStreamIO, \
+                                        ARGO_CVGStreamIO, \
+                                        ASFStreamIO, \
+                                        ASF_OStreamIO, \
+                                        ASF_STREAMStreamIO, \
+                                        ASSStreamIO, \
+                                        ASTStreamIO, \
+                                        AUDIOTOOLBOXStreamIO, \
+                                        AUStreamIO, \
+                                        AV1StreamIO, \
+                                        AVFOUNDATIONStreamIO, \
+                                        AVIStreamIO, \
+                                        AVM2StreamIO, \
+                                        AVRStreamIO, \
+                                        AVS2StreamIO, \
+                                        AVS3StreamIO, \
+                                        AVSStreamIO, \
+                                        BETHSOFTVIDStreamIO, \
+                                        BFIStreamIO, \
+                                        BFSTMStreamIO, \
+                                        BINKAStreamIO, \
+                                        BINKStreamIO, \
+                                        BINStreamIO, \
+                                        BITPACKEDStreamIO, \
+                                        BITStreamIO, \
+                                        BMP_PIPEStreamIO, \
+                                        BMVStreamIO, \
+                                        BOAStreamIO, \
+                                        BRENDER_PIXStreamIO, \
+                                        BRSTMStreamIO, \
+                                        C93StreamIO, \
+                                        CAFStreamIO, \
+                                        CAVSVIDEOStreamIO, \
+                                        CDGStreamIO, \
+                                        CDXLStreamIO, \
+                                        CINEStreamIO, \
+                                        CODEC2RAWStreamIO, \
+                                        CODEC2StreamIO, \
+                                        CONCATStreamIO, \
+                                        CRCStreamIO, \
+                                        CRI_PIPEStreamIO, \
+                                        DASHStreamIO, \
+                                        DATAStreamIO, \
+                                        DAUDStreamIO, \
+                                        DCSTRStreamIO, \
+                                        DDS_PIPEStreamIO, \
+                                        DERFStreamIO, \
+                                        DFAStreamIO, \
+                                        DHAVStreamIO, \
+                                        DIRACStreamIO, \
+                                        DNXHDStreamIO, \
+                                        DPX_PIPEStreamIO, \
+                                        DSFStreamIO, \
+                                        DSICINStreamIO, \
+                                        DSSStreamIO, \
+                                        DTSHDStreamIO, \
+                                        DTSStreamIO, \
+                                        DVBSUBStreamIO, \
+                                        DVBTXTStreamIO, \
+                                        DVDStreamIO, \
+                                        DVStreamIO, \
+                                        DXAStreamIO, \
+                                        EAC3StreamIO, \
+                                        EAStreamIO, \
+                                        EA_CDATAStreamIO, \
+                                        EPAFStreamIO, \
+                                        EXR_PIPEStreamIO, \
+                                        F32BEStreamIO, \
+                                        F32LEStreamIO, \
+                                        F4VStreamIO, \
+                                        F64BEStreamIO, \
+                                        F64LEStreamIO, \
+                                        FFMETADATAStreamIO, \
+                                        FIFOStreamIO, \
+                                        FIFO_TESTStreamIO, \
+                                        FILMSTRIPStreamIO, \
+                                        FILM_CPKStreamIO, \
+                                        FITSStreamIO, \
+                                        FLACStreamIO, \
+                                        FLICStreamIO, \
+                                        FLVStreamIO, \
+                                        FRAMECRCStreamIO, \
+                                        FRAMEHASHStreamIO, \
+                                        FRAMEMD5StreamIO, \
+                                        FRMStreamIO, \
+                                        FSBStreamIO, \
+                                        FWSEStreamIO, \
+                                        G722StreamIO, \
+                                        G723_1StreamIO, \
+                                        G726LEStreamIO, \
+                                        G726StreamIO, \
+                                        G729StreamIO, \
+                                        GDVStreamIO, \
+                                        GEM_PIPEStreamIO, \
+                                        GENHStreamIO, \
+                                        GIFStreamIO, \
+                                        GIF_PIPEStreamIO, \
+                                        GSMStreamIO, \
+                                        GXFStreamIO, \
+                                        H261StreamIO, \
+                                        H263StreamIO, \
+                                        H264StreamIO, \
+                                        HASHStreamIO, \
+                                        HCAStreamIO, \
+                                        HCOMStreamIO, \
+                                        HDSStreamIO, \
+                                        HEVCStreamIO, \
+                                        HLSStreamIO, \
+                                        HNMStreamIO, \
+                                        ICOStreamIO, \
+                                        IDCINStreamIO, \
+                                        IDFStreamIO, \
+                                        IFFStreamIO, \
+                                        IFVStreamIO, \
+                                        ILBCStreamIO, \
+                                        IMAGE2PIPEStreamIO, \
+                                        IMAGE2StreamIO, \
+                                        IMFStreamIO, \
+                                        INGENIENTStreamIO, \
+                                        IPMOVIEStreamIO, \
+                                        IPODStreamIO, \
+                                        IPUStreamIO, \
+                                        IRCAMStreamIO, \
+                                        ISMVStreamIO, \
+                                        ISSStreamIO, \
+                                        IV8StreamIO, \
+                                        IVFStreamIO, \
+                                        IVRStreamIO, \
+                                        J2K_PIPEStreamIO, \
+                                        JACOSUBStreamIO, \
+                                        JPEGLS_PIPEStreamIO, \
+                                        JPEG_PIPEStreamIO, \
+                                        JVStreamIO, \
+                                        KUXStreamIO, \
+                                        KVAGStreamIO, \
+                                        LATMStreamIO, \
+                                        LAVFIStreamIO, \
+                                        LIVE_FLVStreamIO, \
+                                        LMLM4StreamIO, \
+                                        LOASStreamIO, \
+                                        LRCStreamIO, \
+                                        LUODATStreamIO, \
+                                        LVFStreamIO, \
+                                        LXFStreamIO, \
+                                        M4AStreamIO, \
+                                        M4VStreamIO, \
+                                        MATROSKAStreamIO, \
+                                        MCAStreamIO, \
+                                        MCCStreamIO, \
+                                        MD5StreamIO, \
+                                        MGSTSStreamIO, \
+                                        MICRODVDStreamIO, \
+                                        MJ2StreamIO, \
+                                        MJPEGStreamIO, \
+                                        MJPEG_2000StreamIO, \
+                                        MKVTIMESTAMP_V2StreamIO, \
+                                        MLPStreamIO, \
+                                        MLVStreamIO, \
+                                        MMFStreamIO, \
+                                        MMStreamIO, \
+                                        MODSStreamIO, \
+                                        MOFLEXStreamIO, \
+                                        MOVStreamIO, \
+                                        MP2StreamIO, \
+                                        MP3StreamIO, \
+                                        MP4StreamIO, \
+                                        MPC8StreamIO, \
+                                        MPCStreamIO, \
+                                        MPEG1VIDEOStreamIO, \
+                                        MPEG2VIDEOStreamIO, \
+                                        MPEGStreamIO, \
+                                        MPEGTSRAWStreamIO, \
+                                        MPEGTSStreamIO, \
+                                        MPEGVIDEOStreamIO, \
+                                        MPJPEGStreamIO, \
+                                        MPL2StreamIO, \
+                                        MPSUBStreamIO, \
+                                        MSFStreamIO, \
+                                        MSNWCTCPStreamIO, \
+                                        MSPStreamIO, \
+                                        MTAFStreamIO, \
+                                        MTVStreamIO, \
+                                        MULAWStreamIO, \
+                                        MUSXStreamIO, \
+                                        MVIStreamIO, \
+                                        MVStreamIO, \
+                                        MXFStreamIO, \
+                                        MXF_D10StreamIO, \
+                                        MXF_OPATOMStreamIO, \
+                                        MXGStreamIO, \
+                                        NCStreamIO, \
+                                        NISTSPHEREStreamIO, \
+                                        NSPStreamIO, \
+                                        NSVStreamIO, \
+                                        NULLStreamIO, \
+                                        NUTStreamIO, \
+                                        NUVStreamIO, \
+                                        OBUStreamIO, \
+                                        OGAStreamIO, \
+                                        OGGStreamIO, \
+                                        OGVStreamIO, \
+                                        OMAStreamIO, \
+                                        OPUSStreamIO, \
+                                        PAFStreamIO, \
+                                        PAM_PIPEStreamIO, \
+                                        PBM_PIPEStreamIO, \
+                                        PCX_PIPEStreamIO, \
+                                        PGMYUV_PIPEStreamIO, \
+                                        PGM_PIPEStreamIO, \
+                                        PGX_PIPEStreamIO, \
+                                        PHOTOCD_PIPEStreamIO, \
+                                        PICTOR_PIPEStreamIO, \
+                                        PJSStreamIO, \
+                                        PMPStreamIO, \
+                                        PNG_PIPEStreamIO, \
+                                        PPM_PIPEStreamIO, \
+                                        PP_BNKStreamIO, \
+                                        PSD_PIPEStreamIO, \
+                                        PSPStreamIO, \
+                                        PSXSTRStreamIO, \
+                                        PVAStreamIO, \
+                                        PVFStreamIO, \
+                                        QCPStreamIO, \
+                                        QDRAW_PIPEStreamIO, \
+                                        R3DStreamIO, \
+                                        RAWVIDEOStreamIO, \
+                                        REALTEXTStreamIO, \
+                                        REDSPARKStreamIO, \
+                                        RL2StreamIO, \
+                                        RMStreamIO, \
+                                        ROQStreamIO, \
+                                        RPLStreamIO, \
+                                        RSDStreamIO, \
+                                        RSOStreamIO, \
+                                        RTPStreamIO, \
+                                        RTP_MPEGTSStreamIO, \
+                                        RTSPStreamIO, \
+                                        S16BEStreamIO, \
+                                        S16LEStreamIO, \
+                                        S24BEStreamIO, \
+                                        S24LEStreamIO, \
+                                        S32BEStreamIO, \
+                                        S32LEStreamIO, \
+                                        S337MStreamIO, \
+                                        S8StreamIO, \
+                                        SAMIStreamIO, \
+                                        SAPStreamIO, \
+                                        SBCStreamIO, \
+                                        SBGStreamIO, \
+                                        SCCStreamIO, \
+                                        SCDStreamIO, \
+                                        SDL2StreamIO, \
+                                        SDLStreamIO, \
+                                        SDPStreamIO, \
+                                        SDR2StreamIO, \
+                                        SDSStreamIO, \
+                                        SDXStreamIO, \
+                                        SEGMENTStreamIO, \
+                                        SERStreamIO, \
+                                        SGAStreamIO, \
+                                        SGI_PIPEStreamIO, \
+                                        SHNStreamIO, \
+                                        SIFFStreamIO, \
+                                        SIMBIOSIS_IMXStreamIO, \
+                                        SLNStreamIO, \
+                                        SMJPEGStreamIO, \
+                                        SMKStreamIO, \
+                                        SMOOTHSTREAMINGStreamIO, \
+                                        SMUSHStreamIO, \
+                                        SOLStreamIO, \
+                                        SOXStreamIO, \
+                                        SPDIFStreamIO, \
+                                        SPXStreamIO, \
+                                        SRTStreamIO, \
+                                        SSEGMENTStreamIO, \
+                                        STLStreamIO, \
+                                        STREAMHASHStreamIO, \
+                                        STREAM_SEGMENTStreamIO, \
+                                        SUBVIEWER1StreamIO, \
+                                        SUBVIEWERStreamIO, \
+                                        SUNRAST_PIPEStreamIO, \
+                                        SUPStreamIO, \
+                                        SVAGStreamIO, \
+                                        SVCDStreamIO, \
+                                        SVG_PIPEStreamIO, \
+                                        SVSStreamIO, \
+                                        SWFStreamIO, \
+                                        TAKStreamIO, \
+                                        TEDCAPTIONSStreamIO, \
+                                        TEEStreamIO, \
+                                        THPStreamIO, \
+                                        TIERTEXSEQStreamIO, \
+                                        TIFF_PIPEStreamIO, \
+                                        TMVStreamIO, \
+                                        TRUEHDStreamIO, \
+                                        TTAStreamIO, \
+                                        TTMLStreamIO, \
+                                        TTYStreamIO, \
+                                        TXDStreamIO, \
+                                        TYStreamIO, \
+                                        U16BEStreamIO, \
+                                        U16LEStreamIO, \
+                                        U24BEStreamIO, \
+                                        U24LEStreamIO, \
+                                        U32BEStreamIO, \
+                                        U32LEStreamIO, \
+                                        U8StreamIO, \
+                                        UNCODEDFRAMECRCStreamIO, \
+                                        V210StreamIO, \
+                                        V210XStreamIO, \
+                                        VAGStreamIO, \
+                                        VC1StreamIO, \
+                                        VC1TESTStreamIO, \
+                                        VCDStreamIO, \
+                                        VIDCStreamIO, \
+                                        VIVIDASStreamIO, \
+                                        VIVOStreamIO, \
+                                        VMDStreamIO, \
+                                        VOBSUBStreamIO, \
+                                        VOBStreamIO, \
+                                        VOCStreamIO, \
+                                        VPKStreamIO, \
+                                        VPLAYERStreamIO, \
+                                        VQFStreamIO, \
+                                        W64StreamIO, \
+                                        WAVStreamIO, \
+                                        WC3MOVIEStreamIO, \
+                                        WEBMStreamIO, \
+                                        WEBM_CHUNKStreamIO, \
+                                        WEBM_DASH_MANIFESTStreamIO, \
+                                        WEBPStreamIO, \
+                                        WEBP_PIPEStreamIO, \
+                                        WEBVTTStreamIO, \
+                                        WSAUDStreamIO, \
+                                        WSDStreamIO, \
+                                        WSVQAStreamIO, \
+                                        WTVStreamIO, \
+                                        WVEStreamIO, \
+                                        WVStreamIO, \
+                                        X11GRABStreamIO, \
+                                        XAStreamIO, \
+                                        XBINStreamIO, \
+                                        XBM_PIPEStreamIO, \
+                                        XMVStreamIO, \
+                                        XPM_PIPEStreamIO, \
+                                        XVAGStreamIO, \
+                                        XWD_PIPEStreamIO, \
+                                        XWMAStreamIO, \
+                                        YOPStreamIO, \
+                                        YUV4MPEGPIPEStreamIO, \
+                                        _3DOSTRStreamIO, \
+                                        _3G2StreamIO, \
+                                        _3GPStreamIO, \
+                                        _4XMStreamIO

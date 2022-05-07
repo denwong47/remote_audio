@@ -339,11 +339,25 @@ class FFmpegProtocolPipe(classes.FFmpegProtocol):
         "blocksize",
     )
 
+    def __post_init__(
+        self,
+    ) -> None:
+        if (isinstance(self.pipe, str)):
+            _pipe_mapper = {
+                "stdin":0,
+                "stdout":1,
+                "stderr":2,
+            }
+            
+            # Map the pipe if found in mapper, otherwise leave it be.
+            self.pipe = _pipe_mapper.get(self.pipe.lower(), self.pipe)
+
     @property
     def io_string(
         self,
     )->list:
         return [f"pipe:{self.pipe}"]
+
 
     @classmethod
     def create(

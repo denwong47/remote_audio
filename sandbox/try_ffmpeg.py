@@ -29,7 +29,7 @@ if (__name__ =="__main__"):
         _header = remote_audio.io.file.WavHeader.new(remote_audio.io.file.WAV_MAX_CHUNKSIZE)  # Problem - we don't know how long the file will be prior to complete conversion.
 
         # Doesn't matter if we don't set the bytes_total; we'll set it in the callback.
-        _io = remote_audio.io.classes.WaveStreamIO(
+        _io = remote_audio.io.base_io.WaveStreamIO(
             _header.construct(),
             bytes_total = None,
         )

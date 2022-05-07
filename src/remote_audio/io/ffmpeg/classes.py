@@ -5,7 +5,7 @@ import abc
 from dataclasses import dataclass
 from enum import Enum
 import shlex
-from typing import Any, Union
+from typing import Any, Callable, Dict, Iterable, Union
 import warnings
 
 from remote_audio.exceptions import InvalidInputParameters
@@ -55,7 +55,10 @@ class FFmpegOption(abc.ABC):
             )
 
     def __str__(self)->str:
-        return self.command_line()
+        _command_line = self.command_line()
+        if (isinstance(_command_line, list)):
+            _command_line = " ".join(_command_line)
+        return _command_line
 
     @abc.abstractclassmethod
     def create(
@@ -204,3 +207,6 @@ class FFmpegProtocol(FFmpegOption):
             raise InvalidInputParameters(
                 f".command_line() does not allow for {repr(kind)} type."
             )
+
+
+

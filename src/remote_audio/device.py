@@ -3,15 +3,15 @@
 import os, sys
 import re
 
-from typing import Any, BinaryIO, Dict, Iterable, List, Tuple, Union
+from typing import Any, BinaryIO, Callable, Dict, Iterable, List, Tuple, Union
 
 from remote_audio import audio
 from remote_audio import exceptions
 from remote_audio import api
-import remote_audio
 
-from remote_audio.classes import AudioStream
-from remote_audio.io.classes import WaveStreamIO
+from remote_audio.stream import AudioStream, DEFAULT_TIMEOUT
+import remote_audio.classes
+import remote_audio.io
 
 
 class DeviceHostAPISignature(dict):
@@ -225,7 +225,7 @@ class AudioDevice():
         cls,
         input:bool=False,
         output:bool=True,
-    ):
+    )->"AudioDevice":
         """
         Getting the default input or output device
         """
@@ -327,7 +327,14 @@ class AudioDevice():
         **kwargs,
     )->AudioStream:
         """
-        Play an audio
+        Play an wave stream from an IO-like object.
+
+        Returns a AudioStream;
+        use this function as context manager:
+        ```
+        with _device.start_wav_stream(io) as _stream:
+            pass
+        ```
         """
         return audio.start_wav_stream(
             io=io,
@@ -340,25 +347,75 @@ class AudioDevice():
             **kwargs,
         )
 
-# def main():
-#     _wav_path = "test/pika_angry.wav"
+    def play_file(
+        self,
+        path:str,
+        format:str=None,
+        chunk_size:int=1024,
+        start:bool=True,
+        bytes_total:int=None,
+        timeout:float=DEFAULT_TIMEOUT,
+        exit_interrupt:bool=False,
+        callback:Callable[[remote_audio.io.ffmpeg.command.FFmpegCommand, int], None] = None,
+        **kwargs,
+    )->AudioStream:
+        """
+        Play a local audio file.
+        If `format` is not provided, it will use the file suffix.
 
-#     _file_size = remote_audio.io.file.get_wav_data_size(_wav_path)
+        Returns a AudioStream;
+        use this function as context manager:
+        ```
+        with _device.play_file("file.mp3") as _stream:
+            pass
+        ```
+        """
+        return audio.play_file(
+            path=path,
+            format=format,
+            device_index=self.device_index,
+            chunk_size=chunk_size,
+            start=start,
+            bytes_total=bytes_total,
+            timeout=timeout,
+            exit_interrupt=exit_interrupt,
+            callback=callback,
+            **kwargs,
+        )
 
+    def play_http(
+        self,
+        url:str,
+        format:str=None,
+        chunk_size:int=1024,
+        start:bool=True,
+        bytes_total:int=None,
+        timeout:float=DEFAULT_TIMEOUT,
+        exit_interrupt:bool=False,
+        callback:Callable[[remote_audio.io.ffmpeg.command.FFmpegCommand, int], None] = None,
+        **kwargs,
+    )->AudioStream:
+        """
+        Play an audio over HTTP.
+        If `format` is not provided, it will use the file suffix.
 
-#     with open(_wav_path, "rb") as _f1:
-#         _empty = WaveStreamIO(_f1)
+        Returns a AudioStream;
+        use this function as context manager:
+        ```
+        with _device.play_http("https://somedomain.com/file.mp3") as _stream:
+            pass
+        ```
+        """
 
-#         with AudioDevice.default(output=True).start_wav_stream(
-#             _empty,
-#             timeout=10,
-#             bytes_total=_file_size,
-#         ) as _stream1:
-#             _count = 0
-#             while (_data:=_f1.read(1024)):
-#                 _count += 1
-#                 _empty.write(_data)
-
-
-# if (__name__=="__main__"):
-#     main()
+        return audio.play_http(
+            url=url,
+            format=format,
+            device_index=self.device_index,
+            chunk_size=chunk_size,
+            start=start,
+            bytes_total=bytes_total,
+            timeout=timeout,
+            exit_interrupt=exit_interrupt,
+            callback=callback,
+            **kwargs,
+        )
