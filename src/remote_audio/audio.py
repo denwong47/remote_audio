@@ -190,17 +190,23 @@ def play_file(
             path =          path,
             callback =      callback,
         )
-        
-        return start_wav_stream(
-            io =            _io,
-            device_index =  device_index,
-            chunk_size =    chunk_size,
-            start =         start,
-            bytes_total =   bytes_total,
-            timeout =       timeout,
-            exit_interrupt= exit_interrupt,
-            **kwargs,
-        )
+
+        if (not isinstance(_io, Exception)):
+            
+            return start_wav_stream(
+                io =            _io,
+                device_index =  device_index,
+                chunk_size =    chunk_size,
+                start =         start,
+                bytes_total =   bytes_total,
+                timeout =       timeout,
+                exit_interrupt= exit_interrupt,
+                **kwargs,
+            )
+
+        else:
+
+            return _io
     else:
         return InvalidInputParameters(f"{format} is not a valid format.")
 
@@ -245,15 +251,20 @@ def play_http(
             callback =      callback,
         )
         
-        return start_wav_stream(
-            io =            _io,
-            device_index =  device_index,
-            chunk_size =    chunk_size,
-            start =         start,
-            bytes_total =   bytes_total,
-            timeout =       timeout,
-            exit_interrupt= exit_interrupt,
-            **kwargs,
-        )
+        if (not isinstance(_io, Exception)):
+
+            return start_wav_stream(
+                io =            _io,
+                device_index =  device_index,
+                chunk_size =    chunk_size,
+                start =         start,
+                bytes_total =   bytes_total,
+                timeout =       timeout,
+                exit_interrupt= exit_interrupt,
+                **kwargs,
+            )
+        
+        else:
+            return _io
     else:
         return InvalidInputParameters(f"{format} is not a valid format.")

@@ -28,9 +28,13 @@ In the simpliest form:
 import remote_audio
 import time
 with remote_audio.device.AudioDevice.default().play_http("https://somedomain.com/file.mp3") as _stream:
-    # Stuff to do while audio is still playing
+    # Stuff to do while audio is still playing;
+    # if this context finishes before the audio ends, it will block until it does
+
+    # OPTIONAL:
     while _stream.stream_status:
         print (f"Buffer remaining: {_stream.stream_status.bytes_buffered:,} bytes")
+        time.sleep(0.5)
 
 # Stuff to do when audio stops
 ```
