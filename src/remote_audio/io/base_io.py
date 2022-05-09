@@ -5,9 +5,10 @@ import threading
 import time as timer
 from typing import Any, Callable, Dict, Iterable, Union
 
+import remote_audio
 import remote_audio.io.file as file
 import remote_audio.io.http as http
-
+import remote_audio.exceptions as exceptions
 
 
 class StreamIO(io.BytesIO):
@@ -169,24 +170,6 @@ class WaveStreamIO(StreamIO):
         otherwise wave will throw EOFError without the header.
         """
 
-        # _header = file.WavHeader.from_data(
-        #     initial_bytes,
-        # )
-
-        # - Do we need below?
-        #   We can start the stream with a minimum of 44 bytes,
-        #   but if initial_bytes is more than that we should just feed the whole thing through?
-
-        # # TODO make a file.WavHeader.construct() method that regenerates the bytes?
-        # _header_size = _header.header_size
-        # if (isinstance(initial_bytes, bytes)):
-        #     _data = initial_bytes[:_header_size]
-        # elif (isinstance(initial_bytes, str)):
-        #     with open(initial_bytes, "rb") as _f:
-        #         _data = _f.read(_header_size)
-        # elif (isinstance(initial_bytes, io.IOBase)):
-        #     _data = initial_bytes.read(_header_size)
-
         super().__init__(
             initial_bytes = initial_bytes,
             bytes_total = bytes_total,
@@ -195,17 +178,99 @@ class WaveStreamIO(StreamIO):
         )
 
     @classmethod
+    def from_file(
+        cls,
+        path:str,
+        chunk_size:int=file.DEFAULT_FILE_CHUNK_SIZE,
+        callback:Callable[["remote_audio.io.ffmpeg.command.FFmpegCommand", int], None] = None,
+    ):
+        """
+        Play a WAV file from local file.
+
+        Uses threading to load the file in chunks - does not read the whole file in one block.
+        This allows for slow I/O like memory cards or network storages to not block execution.
+        """
+
+        # This is a bit weird, but we ought to at least get the header of the file through before we start a stream.
+        # So we should at least read the first 44 bytes of the file, and feed it as initial_bytes.
+        chunk_size = max(chunk_size, 44)
+        _size = file.get_file_size(path=path)
+
+        if (_size):
+            _f = open(path, "r+b")
+            
+            try:
+                _initial_bytes = _f.read(chunk_size)
+                _io = cls(
+                    initial_bytes = _initial_bytes,
+                    bytes_total = _size,
+                )
+
+            except (
+                    IOError,
+                    OSError,
+                    FileNotFoundError,
+                ) as e:
+                _f.close()
+                return exceptions.FileIOError(f"Fails to read header from {path}.")
+
+            # This is the function to hand off to threading
+            def _iter_callback(
+                gen:Callable[[], bytes],
+                push_data:Callable[[bytes,], None],
+            ):
+                bytes_total = len(_initial_bytes)
+                try:
+                    # Different from HTTP - gen is a callable here
+                    while (_data := gen()):
+                        bytes_total += len(_data)
+                        push_data(_data)
+
+                    if (callback):
+                        callback(
+                            None, # None instead of FFmpegCommand - we didn't use one
+                            bytes_total,
+                        )
+
+                except (
+                    IOError,
+                    OSError,
+                    FileNotFoundError,
+                ) as e:
+                    pass
+                finally:
+                    _f.close()
+
+            # Fire and forget: start piping file to IO
+            threading.Thread(target=lambda : _iter_callback(
+                        gen = lambda : _f.read(chunk_size),
+                        push_data = _io.write,
+                    )).start()
+
+            return _io
+        else:
+            return exceptions.FileIOError(f"{path} not readable.")
+
+    @classmethod
     def from_http(
         cls,
         url:str,
         timeout:float = http.DEFAULT_HTTP_TIMEOUT,
         chunk_size:int = http.DEFAULT_HTTP_CHUNK_SIZE,
         params:Dict[str, Any]={},
+        callback:Callable[["remote_audio.io.ffmpeg.command.FFmpegCommand", int], None] = None,
         **kwargs,
     )->Union[
         "WaveStreamIO",
         Exception,
     ]:
+        """
+        Play a WAV file from HTTP address.
+
+        Uses threading to load the request in chunks - does not read the whole file in one block.
+        This allows for slow connection to not block exeuction.
+        """
+
         # Request returned 200 OK
         _data_generator = http.iter_http_data(
             url = url,
@@ -235,16 +300,24 @@ class WaveStreamIO(StreamIO):
             # Loop for rest of generator to download data
             def _iter_callback(
                 gen:Iterable[bytes],
-                callback:Callable[[bytes], None],
+                push_data:Callable[[bytes], None],
             )->None:
+                bytes_total = 0
                 for _data_chunk in gen:
                     # Thread?
-                    callback(_data_chunk)
+                    bytes_total += len(_data_chunk)
+                    push_data(_data_chunk)
+                
+                if (callback):
+                    callback(
+                        None, # None instead of FFmpegCommand - we didn't use one
+                        bytes_total,
+                    )
 
             # Fire and forget: start downloading
             threading.Thread(target=lambda : _iter_callback(
                         gen = _data_generator,
-                        callback = _io.write,
+                        push_data = _io.write,
                     )).start()
             
             return _io
