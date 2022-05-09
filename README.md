@@ -16,6 +16,19 @@ This library uses
 - `espeak` in case of Linux, and the built-in `say` on macOS.
 The above packgaes needs to be separately installed/compiled; they cannot be installed as `pip` dependencies.
 
+------
+
+### *Note for macOS installations*
+- *Compiling portaudio with clang-13+ will cause errors; use `brew install portaudio` to complete install.*
+- *When installing PyAudio, gcc may not be able to find the portaudio library; you may require setting environmental variables for `gcc`:*
+```shell
+export C_INCLUDE_PATH=/System/Volumes/Data/opt/homebrew/Cellar/portaudio/{version_number}/include
+export LIBRARY_PATH=/System/Volumes/Data/opt/homebrew/Cellar/portaudio/{version_number}/lib
+```
+------
+
+## How it works
+
 At the heart of it, this library works on a few layers:
 ```
     web -> requests -> ffmpeg -> StreamIO -> AudioDevice/portaudio
@@ -40,7 +53,9 @@ with remote_audio.device.AudioDevice.default().play_http("https://somedomain.com
 ```
 will stream and play an mp3 file on the default audio device.
 
-## High Level APIs
+------
+
+# High Level APIs
 
 ### remote_audio.device
 #### remote_audio.device.AudioDevice
@@ -167,18 +182,55 @@ with remote_audio.device.AudioDevice.default().start_wav_stream(io_obj, exit_int
 # code here will execute immediately following the above, but the AudioStream would be interrupted and stopped at this point.
 ```
 
-### remote_audio.classes
+## remote_audio.classes
 
+### remote_audio.io.ffmpeg.StreamIO
+```python
+class remote_audio.io.ffmpeg.StreamIO(
+    initial_bytes:bytes = b"",
+    bytes_total:int = None,
+)
+```
+An IO File-like object class that allows both .read() from the head and .write() to the tail by two different threads simultaneously, without having to manually manipulate the pointer. \
+**NOTE** This is done by a threading lock - so technically it is not *read* and *write* at the same time.
 
-## Low Level APIs
-### remote_audio.audio
+This is a subclass of `io.BytesIO`, for the purpose of `isinstance` checking; however it is not recommended to use any attributes of the superclass.
 
-### remote_audio.stream
+`bytes_total` is not used in the class itself; it is optional at initialisation. Some subclasses will update this variable when the full size becomes available (e.g. over HTTP or FFmpeg conversion)
 
-### remote_audio.io
+##### Methods
+- `.read()`
+- `.write(b:bytes)`
+- `.tell()`\
+Apart from the threading lock, these behave exactly identical to the superclass of `io.BytesIO`.
 
-### remote_audio.io.ffmpeg
-#### remote_audio.io.ffmpeg.FFmpegCommand
+### remote_audio.io.ffmpeg.WaveStreamIO
 
-## Exceptions
-### remote_audio.exceptions
+### remote_audio.io.ffmpeg.MP3StreamIO
+
+------
+
+# Low Level APIs
+## remote_audio.audio
+
+## remote_audio.stream
+
+## remote_audio.io
+
+## remote_audio.io.ffmpeg
+### remote_audio.io.ffmpeg.FFmpegCommand
+```python
+class remote_audio.io.ffmpeg.FFmpegCommand(
+        input:classes.FFmpegOption,
+        output:classes.FFmpegOption,
+        options:Iterable[classes.FFmpegOption]=[],
+        ignore_codes:list=[],
+        timeout:float=None,
+)
+```
+Sub-class of `ShellPipe` and `ShellCommand`; see https://www.github.com/denwong47/shell for details.
+
+------
+
+# Exceptions
+## remote_audio.exceptions
