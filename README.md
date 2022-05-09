@@ -182,11 +182,13 @@ with remote_audio.device.AudioDevice.default().start_wav_stream(io_obj, exit_int
 # code here will execute immediately following the above, but the AudioStream would be interrupted and stopped at this point.
 ```
 
+------
+
 ## remote_audio.classes
 
-### remote_audio.io.ffmpeg.StreamIO
+### remote_audio.classes.StreamIO
 ```python
-class remote_audio.io.ffmpeg.StreamIO(
+class remote_audio.classes.StreamIO(
     initial_bytes:bytes = b"",
     bytes_total:int = None,
 )
@@ -204,20 +206,79 @@ This is a subclass of `io.BytesIO`, for the purpose of `isinstance` checking; ho
 - `.tell()`\
 Apart from the threading lock, these behave exactly identical to the superclass of `io.BytesIO`.
 
-### remote_audio.io.ffmpeg.WaveStreamIO
+------
 
-### remote_audio.io.ffmpeg.MP3StreamIO
+### remote_audio.classes.WaveStreamIO
+```python
+class remote_audio.classes.WaveStreamIO(
+    initial_bytes:bytes = b"",
+    bytes_total:int = None,
+)
+```
+Subclass of `StreamIO`, specifically for streaming of Wave (`.wav`) files.
 
+##### Methods
+```python
+@classmethod
+def remote_audio.classes.WaveStreamIO.from_file(
+    path:str,
+    chunk_size:int=remote_audio.io.file.DEFAULT_FILE_CHUNK_SIZE,
+    callback:Callable[["remote_audio.io.ffmpeg.command.FFmpegCommand", int], None] = None,
+)->"remote_audio.classes.WaveStreamIO"
+```
+
+```python
+@classmethod
+def remote_audio.classes.WaveStreamIO.from_file(
+    path:str,
+    url:str,
+    timeout:float = remote_audio.http.DEFAULT_HTTP_TIMEOUT,
+    chunk_size:int = remote_audio.http.DEFAULT_HTTP_CHUNK_SIZE,
+    params:Dict[str, Any]={},
+    callback:Callable[["remote_audio.io.ffmpeg.command.FFmpegCommand", int], None] = None,
+)->"remote_audio.classes.WaveStreamIO"
+```
+
+------
+
+### remote_audio.classes.MP3StreamIO
+
+##### Methods
+```python
+@classmethod
+def remote_audio.classes.MP3StreamIO.from_file(
+    path:str,
+    chunk_size:int=remote_audio.io.file.DEFAULT_FILE_CHUNK_SIZE,
+    callback:Callable[["remote_audio.io.ffmpeg.command.FFmpegCommand", int], None] = None,
+)->"remote_audio.classes.MP3StreamIO"
+```
+
+```python
+@classmethod
+def remote_audio.classes.MP3StreamIO.from_file(
+    path:str,
+    url:str,
+    timeout:float = remote_audio.http.DEFAULT_HTTP_TIMEOUT,
+    chunk_size:int = remote_audio.http.DEFAULT_HTTP_CHUNK_SIZE,
+    params:Dict[str, Any]={},
+    callback:Callable[["remote_audio.io.ffmpeg.command.FFmpegCommand", int], None] = None,
+)->"remote_audio.classes.MP3StreamIO"
+```
 ------
 
 # Low Level APIs
 ## remote_audio.audio
+`Readme WIP`
 
 ## remote_audio.stream
+`Readme WIP`
 
 ## remote_audio.io
+`Readme WIP`
 
 ## remote_audio.io.ffmpeg
+`Readme WIP`
+
 ### remote_audio.io.ffmpeg.FFmpegCommand
 ```python
 class remote_audio.io.ffmpeg.FFmpegCommand(
@@ -234,3 +295,4 @@ Sub-class of `ShellPipe` and `ShellCommand`; see https://www.github.com/denwong4
 
 # Exceptions
 ## remote_audio.exceptions
+`Readme WIP`
