@@ -13,7 +13,7 @@ from remote_audio.stream import AudioStream, DEFAULT_TIMEOUT
 import remote_audio.classes
 import remote_audio.io
 
-
+# TODO Rewrite as dataclass?
 class DeviceHostAPISignature(dict):
     """
     Simple class proxying a dict, that defines where the device is located in terms of

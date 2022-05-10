@@ -4,7 +4,7 @@ This library is designed for use with macOS and Linux, providing various audio r
 All playbacks are designed to be:
 - streaming - playback shall start from the first chunk of data, not waiting for the entirety of it.
 - non-blocking - the methods starting a playback shall not block the execution of subsequent code.
-- controllable - the streaming and playing in the background can be controlled using Python context manager, so there is full control over when the playing stop and ends.
+- controllable - in contrast to a subprocess, the streaming and playing in the background can be controlled using Python context manager, so there is full control over when the playing stop and ends.
 
 ```
 README WIP
@@ -32,7 +32,7 @@ export LIBRARY_PATH=/System/Volumes/Data/opt/homebrew/Cellar/portaudio/{version_
 At the heart of it, this library works on a few layers:
 ```
     web -> requests -> ffmpeg -> StreamIO -> AudioDevice/portaudio
-       http       mp3 etc.   s16le       wave
+       http       mp3 etc.   s16le   buffered s16le
 ```
 Consider the whole process a continueous IO pipe, with one `stdout` piping into the `stdin` of the next layer.
 
@@ -68,13 +68,29 @@ class remote_audio.device.AudioDevice(
 ```
 
 ##### Properties
-- `.device_index:int`
-- `.signature:remote_audio.device.DeviceHostAPISignature`
-- `.properties:Dict[str, Any]`
-- `.canInput:bool`
-- `.canOutput:bool`
+- `.device_index:int`: Device Index as according to portaudio.
+- `.signature:remote_audio.device.DeviceHostAPISignature`: Instance of Subclass of `dict`, with two keys: `{ "host_api_index": id, "host_api_device_index": index }`.
+- `.properties:Dict[str, Any]`: Various properties returned by portaudio regarding the device. An example:
+```json
+        {
+            'index': 2,
+            'structVersion': 2,
+            'name': 'SB Omni Surround 5.1',
+            'hostApi': 0,
+            'maxInputChannels': 0,
+            'maxOutputChannels': 2,
+            'defaultLowInputLatency': 0.01,
+            'defaultLowOutputLatency': 0.004354166666666667,
+            'defaultHighInputLatency': 0.1,
+            'defaultHighOutputLatency': 0.0136875,
+            'defaultSampleRate': 48000.0
+        }
+```
+- `.canInput:bool`: `True` if the device has InputChannels; otherwise `False`.
+- `.canOutput:bool`: `True` if the device has OutputChannels; otherwise `False`.
 
 ##### Methods
+> `.by_device_index()`
 ```python
 @classmethod
 def remote_audio.device.AudioDevice.by_device_index(
@@ -85,6 +101,7 @@ def remote_audio.device.AudioDevice.by_device_index(
 Class method.
 Return the `AudioDevice` by `device_index`.
 
+> `.by_host_api_device_index()`
 ```python
 @classmethod
 def remote_audio.device.AudioDevice.by_host_api_device_index(
@@ -101,6 +118,7 @@ Return the `AudioDevice` by `host_api_index` and `host_api_device_index`.
 
 Typically there is only one `host_api_index` - `0` - unless there are multiple audio API active.
 
+> `.default()`
 ```python
 @classmethod
 def remote_audio.device.AudioDevice.default(
@@ -111,6 +129,7 @@ def remote_audio.device.AudioDevice.default(
 Class method.
 Return the system default `AudioDevice`.
 
+> `.list()`
 ```python
 @classmethod
 def remote_audio.device.AudioDevice.list()->Iterable[
@@ -120,6 +139,7 @@ def remote_audio.device.AudioDevice.list()->Iterable[
 Class method.
 Return a `list` of all `AudioDevice` listed by `portaudio`.
 
+> `.find()`
 ```python
 @classmethod
 def remote_audio.device.AudioDevice.find(
@@ -139,6 +159,7 @@ Return a `list` of `AudioDevice` that satisfy the criteria:
 - whether the `AudioDevice` `canOutput`;
 - whether the `AudioDevice`'s name satisfy the supplied Regex pattern or `str`.
 
+> `.find_first()`
 ```python
 @classmethod
 def remote_audio.device.AudioDevice.find_first(
@@ -149,6 +170,7 @@ def remote_audio.device.AudioDevice.find_first(
 Class method.
 Just like `.find()`, but returns the first `AudioDevice` only.
 
+> `.start_wav_stream()`
 ```python
 def start_wav_stream(
     self,
@@ -182,6 +204,55 @@ with remote_audio.device.AudioDevice.default().start_wav_stream(io_obj, exit_int
 # code here will execute immediately following the above, but the AudioStream would be interrupted and stopped at this point.
 ```
 
+> `.play_file()`
+```python
+def play_file(
+    self,
+    path:str,
+    format:str=None,
+    chunk_size:int=1024,
+    start:bool=True,
+    bytes_total:int=None,
+    timeout:float=remote_audio.stream.DEFAULT_TIMEOUT,
+    exit_interrupt:bool=False,
+    callback:Callable[[remote_audio.io.ffmpeg.command.FFmpegCommand, int], None] = None,
+    **kwargs,
+)->remote_audio.stream.AudioStream
+```
+Play a local audio file.
+If `format` is not provided, it will use the file suffix.
+
+Returns a `AudioStream`;
+use this function as context manager:
+```python
+with _device.play_file("file.mp3") as _stream:
+    pass
+```
+
+> `.play_http()`
+```python
+def play_http(
+    self,
+    url:str,
+    format:str=None,
+    chunk_size:int=1024,
+    start:bool=True,
+    bytes_total:int=None,
+    timeout:float=remote_audio.stream.DEFAULT_TIMEOUT,
+    exit_interrupt:bool=False,
+    callback:Callable[[remote_audio.io.ffmpeg.command.FFmpegCommand, int], None] = None,
+    **kwargs,
+)->remote_audio.stream.AudioStream
+```
+Play an audio over HTTP.
+If `format` is not provided, it will use the file suffix.
+
+Returns a `AudioStream`;
+use this function as context manager:
+```python
+with _device.play_http("https://somedomain.com/file.mp3") as _stream:
+    pass
+```
 ------
 
 ## remote_audio.classes
